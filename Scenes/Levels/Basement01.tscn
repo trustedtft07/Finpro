@@ -13,6 +13,7 @@
 [ext_resource type="PackedScene" uid="uid://c5btk4icxp61c" path="res://Scenes/Levels/VictoryScreen.tscn" id="11_h37ha"]
 [ext_resource type="Script" uid="uid://dcl2grh0133eo" path="res://Scripts/QuestGeneral/Quest.gd" id="11_oc6f3"]
 [ext_resource type="PackedScene" uid="uid://ceoo6gamb4olk" path="res://Scenes/Interactables/Area_Blocker.tscn" id="11_xe2ch"]
+[ext_resource type="PackedScene" uid="uid://c8qy3n0m4tqxk" path="res://Scenes/Interactables/Bonfire.tscn" id="12_bnfr1"]
 
 [node name="Basement01" type="Node2D" unique_id=1826137153]
 
@@ -124,5 +125,8 @@ position = Vector2(471, 154)
 
 [node name="Player" parent="." unique_id=180867218 instance=ExtResource("3_ppqb8")]
 position = Vector2(-90, -18)
+
+[node name="Bonfire" parent="." unique_id=1400500001 instance=ExtResource("12_bnfr1")]
+position = Vector2(-40, 30)
 
 [node name="Score_tracker_layer" parent="." unique_id=2087766022 instance=ExtResource("7_hbxrs")]

@@ -1,0 +1,29 @@
+[gd_scene format=3 uid="uid://dqxk8m3vt2iar"]
+
+[ext_resource type="Script" path="res://Scripts/Projectile.gd" id="1_prj01"]
+[ext_resource type="Texture2D" uid="uid://bw36ig60cpuaq" path="res://Art/Sprites/Square.png" id="2_sqr01"]
+[ext_resource type="Texture2D" uid="uid://dyb5iqfj3tmwj" path="res://Art/Sprites/light.png" id="3_lit01"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_prj01"]
+radius = 4.0
+
+[node name="Projectile" type="Area2D"]
+z_index = 5
+texture_filter = 1
+script = ExtResource("1_prj01")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_prj01")
+
+[node name="Bolt" type="Sprite2D" parent="."]
+texture_filter = 1
+scale = Vector2(3, 1.6)
+texture = ExtResource("2_sqr01")
+self_modulate = Color(0.3, 0.75, 1.0, 1.0)
+
+[node name="Glow" type="PointLight2D" parent="."]
+energy = 0.7
+color = Color(0.3, 0.75, 1.0, 1.0)
+texture = ExtResource("3_lit01")
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]

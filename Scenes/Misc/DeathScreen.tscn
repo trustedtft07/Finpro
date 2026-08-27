@@ -1,13 +1,13 @@
-[gd_scene load_steps=3 format=3 uid="uid://h61y6jpdtysp"]
+[gd_scene format=3 uid="uid://h61y6jpdtysp"]
 
-[ext_resource type="Script" path="res://Scripts/Reset.gd" id="1_y2wu1"]
+[ext_resource type="Script" uid="uid://co30dlf1jhb3t" path="res://Scripts/Reset.gd" id="1_y2wu1"]
 [ext_resource type="LabelSettings" uid="uid://1cnb4418rr7" path="res://Art/Fonts/pixelized_label_large.tres" id="2_k8myw"]
 
-[node name="DeathScreen" type="CanvasLayer"]
+[node name="DeathScreen" type="CanvasLayer" unique_id=1508435965]
 layer = 2
 script = ExtResource("1_y2wu1")
 
-[node name="Control" type="Control" parent="."]
+[node name="Control" type="Control" parent="." unique_id=535363551]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -15,7 +15,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Label" type="Label" parent="Control"]
+[node name="Label" type="Label" parent="Control" unique_id=586291766]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -25,10 +25,11 @@ grow_vertical = 2
 text = "You died!
 
 Press:
-'R' to restart level
+'R' to respawn at your last bonfire
 or
 'Escape' to quit
 or
 'E' to return to first level"
 label_settings = ExtResource("2_k8myw")
 horizontal_alignment = 1
+vertical_alignment = 1

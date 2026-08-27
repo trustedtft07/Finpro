@@ -13,3 +13,6 @@ func Update(_delta : float):
 		
 	if Input.is_action_just_pressed("Punch")  or Input.is_action_just_pressed("Kick"):
 		state_transition.emit(self, "Attacking")
+
+	if Input.is_action_just_pressed("Heal"):
+		state_transition.emit(self, "Healing")

@@ -3,15 +3,17 @@ class_name PlayerWalking
 
 @export var movespeed := int(350)
 @export var dash_max := int(500)
+@export var dash_stamina_cost := float(25.0)
+@export var dodge_iframe_duration := float(0.25)
 var dashspeed := float(100)
 var can_dash := bool(false)
 var dash_direction := Vector2(0,0)
 
-var player : CharacterBody2D
+var player : PlayerMain
 @export var animator : AnimationPlayer
 
 func Enter():
-	player = get_tree().get_first_node_in_group("Player")
+	player = get_tree().get_first_node_in_group("Player") as PlayerMain
 	animator.play("Walk")
 
 func Update(delta : float):
@@ -19,30 +21,42 @@ func Update(delta : float):
 	Move(input_dir)
 	LessenDash(delta)
 
-	if(Input.is_action_just_pressed("Dash") && can_dash):
+	if(Input.is_action_just_pressed("Dash") && can_dash && player.has_stamina(dash_stamina_cost)):
 		start_dash(input_dir)
 		
 	if Input.is_action_just_pressed("Punch") or Input.is_action_just_pressed("Kick"):
 		Transition("Attacking")
-	
+
+	if Input.is_action_just_pressed("Heal"):
+		Transition("Healing")
+
 func Move(input_dir : Vector2):
 	#Suddenly turning mid dash
 	if(dash_direction != Vector2.ZERO and dash_direction != input_dir):
 		dash_direction = Vector2.ZERO
 		dashspeed = 0
 
-	player.velocity = input_dir * movespeed + dash_direction * dashspeed 
+	player.velocity = input_dir * movespeed + dash_direction * dashspeed
 	player.move_and_slide()
+	player.set_facing_direction(input_dir)
 
 	if(input_dir.length() <= 0):
 		Transition("Idle")
 
 func start_dash(input_dir : Vector2):
 	AudioManager.play_sound(AudioManager.PLAYER_ATTACK_SWING, 0.3, -1)
+	player.use_stamina(dash_stamina_cost)
 	dash_direction = input_dir.normalized()
 	dashspeed = dash_max
 	animator.play("Dash")
 	can_dash = false
+	roll_iframes()
+
+#Timed independently of the roll animation, not tied to it
+func roll_iframes():
+	player.dodge_invincible = true
+	await get_tree().create_timer(dodge_iframe_duration).timeout
+	player.dodge_invincible = false
 
 func LessenDash(delta : float):
 	#Higher multiplier values makes the dash shorter
@@ -57,7 +71,7 @@ func LessenDash(delta : float):
 	if(dashspeed <= 0):
 		can_dash = true
 		dash_direction = Vector2.ZERO
-		
+
 	if(animator.current_animation == "Dash"):
 		await animator.animation_finished
 		animator.play("Walk")

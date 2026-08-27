@@ -371,7 +371,7 @@ animator = NodePath("../../AnimationPlayer")
 [node name="MainAttack" type="Node" parent="FSM/enemy_attack_state"]
 script = ExtResource("26_b28qd")
 anim = "Attack"
-damage = 30
+damage = 40
 
 [node name="enemy_death_state" type="Node" parent="FSM" node_paths=PackedStringArray("animator")]
 script = ExtResource("27_m2jmx")

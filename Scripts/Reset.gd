@@ -11,7 +11,8 @@ func _process(_delta):
 	if Input.is_action_just_pressed("Enter"):
 		GameManager.load_next_level(load("res://Scenes/Levels/MainFloor.tscn")) #Hardcoded because export gave issues
 
-#When the player dies and wishes to reset, remove all of their money and reload the level
+#When the player dies and wishes to reset, remove all of their money and respawn
+#at the last bonfire they rested at (or reload the level if none was lit yet)
 func restart():
 	GameManager.reset_money()
-	GameManager.load_same_level()
+	GameManager.respawn_at_checkpoint()
