@@ -1,8 +1,6 @@
 extends Node
 
-#NOTE this class is attached to the death_screen and victory_screen scene that shows up when the player dies
-#it handles the logic for resetting the level or quitting the game
-
+#Attached to the death/victory screens
 func _process(_delta):
 	if Input.is_action_just_pressed("Restart"):
 		restart()
@@ -11,8 +9,6 @@ func _process(_delta):
 	if Input.is_action_just_pressed("Enter"):
 		GameManager.load_next_level(load("res://Scenes/Levels/MainFloor.tscn")) #Hardcoded because export gave issues
 
-#When the player dies and wishes to reset, remove all of their money and respawn
-#at the last bonfire they rested at (or reload the level if none was lit yet)
 func restart():
 	GameManager.reset_money()
 	GameManager.respawn_at_checkpoint()

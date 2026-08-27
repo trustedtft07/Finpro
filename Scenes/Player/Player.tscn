@@ -36,6 +36,8 @@
 [ext_resource type="LabelSettings" uid="uid://1cnb4418rr7" path="res://Art/Fonts/pixelized_label_large.tres" id="34_aqkdi"]
 [ext_resource type="Script" uid="uid://c6u85jgwryxin" path="res://Scenes/Player/Scripts/States/PlayerHealState.gd" id="35_heal1"]
 [ext_resource type="PackedScene" uid="uid://dxk3nar7q2h5n" path="res://Scenes/Misc/MechanicsPanel.tscn" id="36_mech1"]
+[ext_resource type="Script" uid="uid://ckl0xpkxj1vcs" path="res://Scenes/Player/Scripts/States/PlayerParryState.gd" id="37_parry1"]
+[ext_resource type="Script" uid="uid://dwrmagmh6auml" path="res://Scenes/Player/Scripts/ParryShield.gd" id="38_shield1"]
 
 [sub_resource type="OccluderPolygon2D" id="OccluderPolygon2D_uky13"]
 polygon = PackedVector2Array(-2, -13, -8, -13, -10, -11, -10, -2, -4, 2, -4, 10, 5, 10, 5, 2, 10, -1, 10, -10, 8, -13)
@@ -139,6 +141,27 @@ animations = [{
 "speed": 5.0
 }]
 
+[sub_resource type="Curve" id="Curve_h7vsg"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), -2.71062, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_j105i"]
+curve = SubResource("Curve_h7vsg")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_heal1"]
+particle_flag_disable_z = true
+emission_shape = 1
+emission_sphere_radius = 10.0
+direction = Vector3(0, -1, 0)
+spread = 20.0
+initial_velocity_min = 12.0
+initial_velocity_max = 28.0
+gravity = Vector3(0, -25, 0)
+scale_min = 0.05
+scale_max = 0.05
+color = Color(0.45, 1, 0.55, 0.5)
+alpha_curve = SubResource("CurveTexture_j105i")
+
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wk4mn"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_mkwab"]
@@ -159,12 +182,8 @@ bg_color = Color(0.309804, 0.807843, 0.278431, 1)
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_heal1"]
 bg_color = Color(0.870588, 0.643137, 0.156863, 1)
 
-[sub_resource type="Curve" id="Curve_h7vsg"]
-_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), -2.71062, 0.0, 0, 0]
-point_count = 2
-
-[sub_resource type="CurveTexture" id="CurveTexture_j105i"]
-curve = SubResource("Curve_h7vsg")
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mana1"]
+bg_color = Color(0.219608, 0.541176, 0.945098, 1)
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_wrxbo"]
 particle_flag_disable_z = true
@@ -409,7 +428,7 @@ _data = {
 &"Walk": SubResource("Animation_wo7cn")
 }
 
-[node name="Player" type="CharacterBody2D" unique_id=784215348 node_paths=PackedStringArray("staminabar", "aim_indicator", "heal_bar", "sprite", "healthbar", "hit_particles") groups=["Player"]]
+[node name="Player" type="CharacterBody2D" unique_id=784215348 node_paths=PackedStringArray("staminabar", "aim_indicator", "heal_bar", "manabar", "sprite", "healthbar", "hit_particles") groups=["Player"]]
 top_level = true
 texture_filter = 1
 floor_stop_on_slope = false
@@ -418,6 +437,7 @@ script = ExtResource("1_y5oq4")
 staminabar = NodePath("Camera2D/StaminaBar")
 aim_indicator = NodePath("AimIndicator")
 heal_bar = NodePath("Camera2D/HealBar")
+manabar = NodePath("Camera2D/ManaBar")
 sprite = NodePath("AnimatedSprite2D")
 healthbar = NodePath("Camera2D/ProgressBar")
 health = 200
@@ -436,6 +456,27 @@ frame = 3
 position = Vector2(15, 5)
 rotation = 0.0
 
+[node name="ParrySparks" parent="AnimatedSprite2D" unique_id=1275355138 instance=ExtResource("21_gooki")]
+modulate = Color(0.65, 0.95, 1, 1)
+position = Vector2(15, 0)
+rotation = 0.0
+amount = 80
+lifetime = 0.18
+
+[node name="HealParticles" type="GPUParticles2D" parent="AnimatedSprite2D" unique_id=1275355139]
+position = Vector2(0, 10)
+emitting = false
+amount = 20
+texture = ExtResource("27_on0bn")
+lifetime = 0.9
+process_material = SubResource("ParticleProcessMaterial_heal1")
+
+[node name="HealBurst" parent="AnimatedSprite2D" unique_id=1275355140 instance=ExtResource("21_gooki")]
+modulate = Color(0.5, 1, 0.55, 0.6)
+position = Vector2(0, 5)
+scale = Vector2(0.05, 0.05)
+amount = 70
+
 [node name="Hitboxes" type="Node2D" parent="AnimatedSprite2D" unique_id=169745481]
 
 [node name="Punch_Hitbox" type="Area2D" parent="AnimatedSprite2D/Hitboxes" unique_id=1031849917]
@@ -450,6 +491,9 @@ disabled = true
 [node name="CollisionShape2D" type="CollisionShape2D" parent="AnimatedSprite2D/Hitboxes/Kick_Hitbox" unique_id=167787258]
 shape = SubResource("CircleShape2D_mkwab")
 disabled = true
+
+[node name="ParryShield" type="Node2D" parent="." unique_id=203409573]
+script = ExtResource("38_shield1")
 
 [node name="BodyCollisionShape" type="CollisionShape2D" parent="." unique_id=1334030664]
 position = Vector2(0, 7)
@@ -492,8 +536,17 @@ animator = NodePath("../../AnimationPlayer")
 script = ExtResource("30_ecf44")
 animator = NodePath("../../AnimationPlayer")
 
-[node name="Healing" type="Node" parent="FSM" unique_id=72896404]
+[node name="Healing" type="Node" parent="FSM" unique_id=72896404 node_paths=PackedStringArray("heal_particles", "heal_burst")]
 script = ExtResource("35_heal1")
+heal_particles = NodePath("../../AnimatedSprite2D/HealParticles")
+heal_burst = NodePath("../../AnimatedSprite2D/HealBurst")
+
+[node name="Parrying" type="Node" parent="FSM" unique_id=1115162492 node_paths=PackedStringArray("camera", "parry_text", "parry_sparks", "shield")]
+script = ExtResource("37_parry1")
+camera = NodePath("../../Camera2D")
+parry_text = NodePath("../../Camera2D/ParryText")
+parry_sparks = NodePath("../../AnimatedSprite2D/ParrySparks")
+shield = NodePath("../../ParryShield")
 
 [node name="PointLight2D2" type="PointLight2D" parent="." unique_id=1886501293]
 energy = 0.3
@@ -574,9 +627,32 @@ value = 3.0
 fill_mode = 2
 show_percentage = false
 
+[node name="ManaLabel" type="Label" parent="Camera2D" unique_id=2100485799]
+offset_left = -228.5
+offset_top = -44.0
+offset_right = -182.5
+offset_bottom = -31.0
+text = "Mana"
+label_settings = ExtResource("28_5mc6f")
+
+[node name="ManaBar" type="ProgressBar" parent="Camera2D" unique_id=904957683]
+light_mask = 2
+visibility_layer = 2
+offset_left = -228.5
+offset_top = -26.0
+offset_right = -222.5
+offset_bottom = 38.0
+rotation = -1.57079
+theme_override_styles/background = SubResource("StyleBoxFlat_ub6e5")
+theme_override_styles/fill = SubResource("StyleBoxFlat_mana1")
+step = 1.0
+value = 100.0
+fill_mode = 2
+show_percentage = false
+
 [node name="ControlsHint" type="Label" parent="Camera2D" unique_id=1114666200]
 offset_left = 38.5
-offset_top = -119.0
+offset_top = -133.0
 offset_right = 228.5
 offset_bottom = -7.0
 text = "Controls
@@ -584,11 +660,29 @@ WASD - Move
 Space - Dash
 LMB / RMB - Attack
 Q - Ranged
+F - Parry
 H - Heal
 E - Interact
 I - Mechanics"
 label_settings = ExtResource("28_5mc6f")
 horizontal_alignment = 2
+paragraph_separator = "/"
+
+[node name="ParryText" type="Label" parent="Camera2D" unique_id=1114666201]
+modulate = Color(1, 1, 1, 0)
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -64.0
+offset_top = -91.0
+offset_right = 64.0
+offset_bottom = -65.0
+grow_horizontal = 2
+pivot_offset = Vector2(64, 13)
+text = "PARRY!"
+label_settings = ExtResource("34_aqkdi")
+horizontal_alignment = 1
+uppercase = true
 
 [node name="hit_particle_blood" type="GPUParticles2D" parent="." unique_id=1374123866]
 emitting = false
@@ -610,9 +704,9 @@ quest_announcement = NodePath("QuestAnnounceText")
 
 [node name="QuestText" type="Label" parent="QuestTracker" unique_id=732124545]
 offset_left = -456.0
-offset_top = -86.0
+offset_top = 170.0
 offset_right = -304.0
-offset_bottom = -57.0
+offset_bottom = 199.0
 label_settings = ExtResource("28_5mc6f")
 
 [node name="QuestAnnounceText" type="Label" parent="QuestTracker" unique_id=1642405827]

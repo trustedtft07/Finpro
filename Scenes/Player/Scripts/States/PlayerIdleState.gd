@@ -16,3 +16,6 @@ func Update(_delta : float):
 
 	if Input.is_action_just_pressed("Heal"):
 		state_transition.emit(self, "Healing")
+
+	if Input.is_action_just_pressed("Parry"):
+		state_transition.emit(self, "Parrying")

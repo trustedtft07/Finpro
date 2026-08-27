@@ -5,11 +5,12 @@ class_name PlayerMain
 @export var staminabar : ProgressBar
 @export var aim_indicator : Node2D
 @export var heal_bar : ProgressBar
+@export var manabar : ProgressBar
 const DEATH_SCREEN = preload("res://Scenes/Misc/DeathScreen.tscn")
 const PROJECTILE = preload("res://Scenes/Interactables/Projectile.tscn")
 
 #region Healing (Gourd)
-#Getting hit while channeling interrupts the heal (see _take_damage override) - the charge is still spent either way
+#Getting hit while channeling interrupts the heal - charge still spent
 @export var max_heal_charges : int = 3
 @export var heal_amount : int = 80
 @export var heal_channel_time : float = 0.9
@@ -39,7 +40,7 @@ func _update_heal_bar():
 #region Ranged Attack
 #Only updated on movement, so it keeps pointing the same way while standing still
 var facing_direction : Vector2 = Vector2.DOWN
-@export var projectile_stamina_cost : float = 20.0
+@export var projectile_mana_cost : float = 25.0
 @export var projectile_spawn_offset : float = 20.0
 @export var aim_indicator_offset : float = 16.0
 
@@ -53,10 +54,10 @@ func try_fire_projectile():
 	if(state_name != "Idle" && state_name != "Moving"):
 		return
 
-	if(!has_stamina(projectile_stamina_cost)):
+	if(!has_mana(projectile_mana_cost)):
 		return
 
-	use_stamina(projectile_stamina_cost)
+	use_mana(projectile_mana_cost)
 	AudioManager.play_sound(AudioManager.PLAYER_ATTACK_SWING, 0.3, 0)
 
 	var projectile = PROJECTILE.instantiate()
@@ -93,23 +94,66 @@ func _update_staminabar():
 	staminabar.value = stamina
 #endregion
 
+#region Mana
+#Doesn't regenerate on its own - only bonfire rest or a kill restores it
+@export var max_mana : float = 100.0
+@export var mana_kill_restore : float = 5.0
+var mana : float = 100.0
+
+func has_mana(amount : float) -> bool:
+	return mana >= amount
+
+func use_mana(amount : float):
+	mana = clampf(mana - amount, 0, max_mana)
+	_update_manabar()
+
+func restore_mana(amount : float):
+	mana = clampf(mana + amount, 0, max_mana)
+	_update_manabar()
+
+#Used by PlayerAttackState and Projectile on a kill
+func restore_mana_on_kill():
+	restore_mana(mana_kill_restore)
+
+func _update_manabar():
+	manabar.value = mana
+#endregion
+
+#region Parry
+#True only during the parry active window; checked by EnemyAttackState
+signal parried(attacker)
+var parry_active : bool = false
+
+func try_parry(attacker) -> bool:
+	if(!parry_active):
+		return false
+
+	parry_active = false #only the first hit within the window counts
+	parried.emit(attacker)
+	return true
+#endregion
+
 #region Checkpoint (Bonfire)
 func full_restore():
 	heal_to_full()
 	stamina = max_stamina
 	_update_staminabar()
 	refill_heal_charges()
+	mana = max_mana
+	_update_manabar()
 #endregion
 
 func _ready():
-	super() #calls init_character() on base-class CharacterBase
+	super()
 	staminabar.max_value = max_stamina
 	staminabar.value = stamina
 	heal_bar.max_value = max_heal_charges
 	heal_charges = GameManager.heal_charges if GameManager.heal_charges >= 0 else max_heal_charges
 	_update_heal_bar()
+	manabar.max_value = max_mana
+	manabar.value = mana
 
-	#If we're loading into the scene our last bonfire was lit in, spawn there instead of the level's default start position
+	#Spawn at the last bonfire if we're in that scene
 	if GameManager.has_checkpoint and get_tree().current_scene.scene_file_path == GameManager.checkpoint_scene:
 		global_position = GameManager.checkpoint_position
 
@@ -120,7 +164,7 @@ func _take_damage(amount):
 	super._take_damage(amount)
 
 func _process(delta):
-	super(delta) #calls Turn() on base-class CharacterBase
+	super(delta)
 	_regen_stamina(delta)
 
 	if(Input.is_action_just_pressed("RangedAttack")):
@@ -130,11 +174,8 @@ func _process(delta):
 	aim_indicator.rotation = facing_direction.angle()
 	aim_indicator.visible = !is_dead
 
-#All of our logic is either in the CharacterBase class
-#or spread out over our states in the finite-state-manager, this class is almost empty
-
 func _die():
-	super() #calls _die() on base-class CharacterBase
+	super()
 
 	fsm.force_change_state("Die")
 	var death_scene = DEATH_SCREEN.instantiate()

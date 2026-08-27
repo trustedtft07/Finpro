@@ -2,8 +2,7 @@
 extends Node
 class_name State
 
-#NOTE This is the State base-class, all our specific states inherits this logic
-# DO NOT CHANGE THIS unless you know what you are doing
+#Base class for all states - avoid changing this directly
 
 @warning_ignore("unused_signal")
 signal state_transition

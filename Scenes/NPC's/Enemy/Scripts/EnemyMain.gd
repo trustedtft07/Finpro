@@ -7,29 +7,45 @@ var player_in_range = false
 @export var attack_node : Node
 @export var chase_node : Node
 
-#After finishing an attack, we return here to determine our next action based on the players proximity
 func finished_attacking():
 	if(player_in_range == true):
 		fsm.change_state(attack_node, "enemy_chase_state")
 	else:
 		fsm.change_state(attack_node, "enemy_idle_state")
 
-#Register player proximity, start chasing if we are idling when the player gets close
+#region Parry Stagger
+#Prevents an instant re-attack right after a parry
+@export var parry_stagger_duration : float = 0.6
+var _stagger_timer : float = 0.0
+
+func is_staggered() -> bool:
+	return _stagger_timer > 0.0
+
+func _process(delta):
+	super(delta)
+	if(_stagger_timer > 0.0):
+		_stagger_timer -= delta
+#endregion
+
+#On parry: stop the hitbox, stagger, then finish normally
+func interrupt_attack():
+	if attack_node.has_method("cancel"):
+		attack_node.cancel()
+	_stagger_timer = parry_stagger_duration
+	finished_attacking()
+
 func _on_detection_area_body_entered(body):
 	if body.is_in_group("Player"):
 		player_in_range = true
-		#We don't want this to happen from the death state, only from idle
-		if fsm.current_state.name == "enemy_idle_state": 
+		#Only from idle, not death
+		if fsm.current_state.name == "enemy_idle_state":
 			fsm.force_change_state("enemy_chase_state")
 
-#Return to idle when player leaves our proximity
 func _on_detection_area_body_exited(body):
 	if body.is_in_group("Player"):
 		player_in_range = false
 		fsm.change_state(chase_node, "enemy_idle_state")
-		
+
 func _die():
-	super() #calls _die() on base-class CharacterBase
+	super()
 	fsm.force_change_state("enemy_death_state")
-	
-	

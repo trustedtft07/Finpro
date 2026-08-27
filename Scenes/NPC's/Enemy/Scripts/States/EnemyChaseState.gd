@@ -11,7 +11,7 @@ func Enter():
 	animator.play("Chasing")
 
 func Update(_delta):
-	#Don't fight the knockback velocity CharacterBase is currently applying
+	#Don't fight active knockback
 	if body.is_knockbacked:
 		return
 
@@ -21,6 +21,6 @@ func Update(_delta):
 	body.velocity = chase_direction.normalized() * move_speed
 	body.move_and_slide()
 	
-	if(chase_direction.length() <= attack_range):
+	if(chase_direction.length() <= attack_range and not body.is_staggered()):
 		state_transition.emit(self, "enemy_attack_state")
 		

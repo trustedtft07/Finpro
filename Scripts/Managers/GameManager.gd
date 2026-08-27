@@ -3,12 +3,9 @@ extends Node
 var money = 0
 var _hitstop_token := 0
 
-#NOTE This class is our game manager and handles the players money and loading scenes
-#These functions can be called globally from anywhere
-
 #Brief slow-motion freeze-frame for hit feedback. Safe to call from overlapping hits;
-#only the most recent call restores time_scale, so a second hit while one is still
-#resolving extends the freeze instead of cutting it short.
+#only the most recent call restores time_scale, so a second hit extends the freeze
+#instead of cutting it short.
 func hitstop(duration : float = 0.06, time_scale : float = 0.05):
 	if duration <= 0.0:
 		return

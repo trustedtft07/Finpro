@@ -1,10 +1,10 @@
 extends State
 class_name PlayerAttacking
 
-#How long after an attack finishes the player can still chain into the next combo stage
+#Combo chain window after the attack finishes
 @export var combo_window : float = 0.6
 
-#Damage/knockback multipliers per combo stage (0 = first hit, last index = finisher)
+#Per combo stage: 0=first hit, last=finisher
 const COMBO_DAMAGE_MULT : Array[float] = [1.0, 1.15, 1.5]
 const COMBO_KNOCKBACK_MULT : Array[float] = [1.0, 1.2, 2.0]
 const MAX_COMBO_STAGE := 2
@@ -23,8 +23,7 @@ func Enter():
 	player = get_tree().get_first_node_in_group("Player") as PlayerMain
 	DetermineAttack()
 
-	#call_deferred: emitting synchronously here fires while the FSM is still mid-way through
-	#change_state() (current_state isn't us yet), so the transition gets dropped and we'd get stuck
+	#call_deferred: emitting now fires mid change_state() and gets dropped
 	if(!player.has_stamina(current_attack.stamina_cost)):
 		call_deferred("_abort_to_idle")
 		return
@@ -32,11 +31,10 @@ func Enter():
 	player.use_stamina(current_attack.stamina_cost)
 	AudioManager.play_sound(AudioManager.PLAYER_ATTACK_SWING, 0.3, 1)
 
-	#If we're outside the combo window since our last hit landed, start the chain over
 	if Time.get_ticks_msec() - _last_hit_ms > combo_window * 1000:
 		combo_stage = 0
 
-	#Play the attack animation and wait for it to finish, transition from this state is handled by the animation player
+	#Transition happens via the animation player
 	animator.play(current_attack.anim)
 	await animator.animation_finished
 
@@ -48,15 +46,13 @@ func Enter():
 func _abort_to_idle():
 	state_transition.emit(self, "Idle")
 
-#Read which attack to use from our two attack nodes
 func DetermineAttack():
 	if(Input.is_action_just_pressed("Punch")):
 		current_attack = attacks[0]
 	elif(Input.is_action_just_pressed("Kick")):
 		current_attack = attacks[1]
 
-#Hitbox is turned on/off through the animationplayer, it an enemy is standing inside of it once that happens they take damage
-#Both hitboxes call back to this function through signals
+#Hitbox toggled by the animation player, both hitboxes route here via signals
 func _on_hitbox_body_entered(body):
 	if body.is_in_group("Enemy"):
 		deal_damage(body)
@@ -68,7 +64,10 @@ func deal_damage(enemy : EnemyMain):
 	var damage_mult = COMBO_DAMAGE_MULT[combo_stage]
 	var knockback_mult = COMBO_KNOCKBACK_MULT[combo_stage]
 
+	var was_dead = enemy.is_dead
 	enemy._take_damage(int(round(current_attack.damage * damage_mult)))
+	if(!was_dead && enemy.is_dead):
+		player.restore_mana_on_kill()
 
 	var direction = enemy.global_position - player.global_position
 	if direction == Vector2.ZERO:

@@ -5,8 +5,7 @@ class_name Projectile
 @export var damage : int = 20
 @export var lifetime : float = 1.5
 
-#Must be set by whoever spawns this (see PlayerMain.try_fire_projectile) before it enters the tree,
-#since _ready() uses it to orient the sprite towards its travel direction
+#Set by whoever spawns this (see PlayerMain.try_fire_projectile) before it enters the tree
 var direction : Vector2 = Vector2.RIGHT
 
 func _ready():
@@ -20,6 +19,13 @@ func _process(delta):
 
 func _on_body_entered(body):
 	if body.is_in_group("Enemy"):
+		var was_dead = body.is_dead
 		body._take_damage(damage)
 		AudioManager.play_sound(AudioManager.PLAYER_ATTACK_HIT, 0, 1)
+
+		if(!was_dead && body.is_dead):
+			var player = get_tree().get_first_node_in_group("Player") as PlayerMain
+			if player:
+				player.restore_mana_on_kill()
+
 		queue_free()

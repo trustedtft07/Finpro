@@ -7,8 +7,7 @@ class_name CharacterBase
 @export var flipped_horizontal : bool
 @export var hit_particles : GPUParticles2D
 var invincible : bool = false
-#Separate from 'invincible' (hit-flash i-frames) so a dodge roll's i-frame window
-#can't be cut short or extended by the damage-flash tween running at the same time
+#Separate from 'invincible' so a dodge roll's i-frames aren't cut short by the damage-flash tween
 var dodge_invincible : bool = false
 var is_dead : bool = false
 var max_health : int
@@ -24,7 +23,6 @@ func _process(delta):
 	Turn()
 	_process_knockback(delta)
 
-#Add anything here that needs to be initialized on the character
 func init_character():
 	max_health = health
 	healthbar.max_value = health
@@ -34,11 +32,10 @@ func heal_to_full():
 	health = max_health
 	healthbar.value = health
 
-#Flip charater sprites based on their current velocity
 func Turn():
-	#This ternary lets us flip a sprite if its drawn the wrong way
+	#Some sprites are drawn facing the other way
 	var direction = -1 if flipped_horizontal == true else 1
-	
+
 	if(velocity.x < 0):
 		sprite.scale.x = -direction
 	elif(velocity.x > 0):
@@ -46,8 +43,7 @@ func Turn():
 
 #region Knockback
 
-#Shove this character away from a hit. States that drive movement (eg. enemy chase)
-#should check is_knockbacked and skip setting velocity while this is active.
+#Movement states must check is_knockbacked and skip setting velocity while this is active
 func apply_knockback(direction : Vector2, force : float, duration : float = 0.15):
 	if force <= 0.0:
 		return
@@ -70,14 +66,12 @@ func _process_knockback(delta : float):
 
 #region Taking Damage
 
-#Play universal damage sound effect for any character taking damage and flashing red
 func damage_effects():
 	AudioManager.play_sound(AudioManager.BLOODY_HIT, 0, -3)
 	after_damage_iframes()
 	if(hit_particles):
 		hit_particles.emitting = true
 
-#After we are done flashing red, we can take damage again
 func after_damage_iframes():
 	invincible = true
 	var tween = create_tween()
@@ -87,24 +81,24 @@ func after_damage_iframes():
 	tween.tween_property(self, "modulate", Color.WHITE, 0.1)
 	await tween.finished
 	invincible = false
-	
+
 func _take_damage(amount):
 	if(invincible == true || dodge_invincible == true || is_dead == true):
 		return
-		
+
 	health -= amount
 	healthbar.value = health;
 	damage_effects()
-	
+
 	if(health <= 0):
 		_die()
-		
+
 func _die():
 	if(is_dead):
 		return
-		
+
 	is_dead = true
-	#Remove/destroy this character once it's able to do so unless its the player
+	#Not the player - PlayerMain handles its own removal
 	await get_tree().create_timer(1.0).timeout
 	if is_instance_valid(self) and not is_in_group("Player"):
 		queue_free()
