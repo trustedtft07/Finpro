@@ -1,7 +1,22 @@
 extends Node
 
+#Quick-travel shortcuts, usable from any level. Kept as paths and load()ed on demand
+#so the big forest scenes aren't pulled into memory at startup.
+const QUICK_TRAVEL = {
+	"TeleportForest": "res://Scenes/Levels/Forest.tscn",
+	"TeleportGreenForest": "res://Scenes/Levels/GreenForest.tscn",
+}
+
 var money = 0
 var _hitstop_token := 0
+
+func _process(_delta):
+	for action in QUICK_TRAVEL:
+		if Input.is_action_just_pressed(action):
+			var path = QUICK_TRAVEL[action]
+			if get_tree().current_scene.scene_file_path != path:
+				get_tree().change_scene_to_file(path)
+			return
 
 #Brief slow-motion freeze-frame for hit feedback. Safe to call from overlapping hits;
 #only the most recent call restores time_scale, so a second hit extends the freeze
@@ -21,6 +36,15 @@ func reset_money():
 
 func add_money(addmoney : int):
 	money += addmoney
+
+#Everything a run carries between scenes. Starting over from the first level has to
+#clear it, or you come back with a spent gourd and a checkpoint in a level you left.
+func reset_run():
+	reset_money()
+	heal_charges = -1
+	has_checkpoint = false
+	checkpoint_position = Vector2.ZERO
+	checkpoint_scene = ""
 
 func load_next_level(next_scene : PackedScene):
 	get_tree().change_scene_to_packed(next_scene)

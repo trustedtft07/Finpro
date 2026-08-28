@@ -18,6 +18,10 @@ func _process(delta):
 	position += direction * speed * delta
 
 func _on_body_entered(body):
+	#Pass through the player who fired it, but stop on walls as well as enemies
+	if body.is_in_group("Player"):
+		return
+
 	if body.is_in_group("Enemy"):
 		var was_dead = body.is_dead
 		body._take_damage(damage)
@@ -28,4 +32,4 @@ func _on_body_entered(body):
 			if player:
 				player.restore_mana_on_kill()
 
-		queue_free()
+	queue_free()

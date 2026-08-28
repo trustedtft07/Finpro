@@ -16,7 +16,13 @@ func Update(_delta):
 		return
 
 	var player = get_tree().get_first_node_in_group("Player") as CharacterBody2D
-	var chase_direction = player.position - body.position as Vector2
+	if not is_instance_valid(player):
+		state_transition.emit(self, "enemy_idle_state")
+		return
+
+	#global_position: local position only happens to match while both sit under a
+	#plain (transformless) parent
+	var chase_direction = player.global_position - body.global_position as Vector2
 
 	body.velocity = chase_direction.normalized() * move_speed
 	body.move_and_slide()

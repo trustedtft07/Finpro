@@ -165,14 +165,19 @@ func _take_damage(amount):
 
 func _process(delta):
 	super(delta)
-	_regen_stamina(delta)
-
-	if(Input.is_action_just_pressed("RangedAttack")):
-		try_fire_projectile()
 
 	aim_indicator.position = facing_direction * aim_indicator_offset
 	aim_indicator.rotation = facing_direction.angle()
 	aim_indicator.visible = !is_dead
+
+#Resources and action input share the physics frame with the state machine, so a press
+#can't be consumed on a render frame the states never see
+func _physics_process(delta):
+	super(delta)
+	_regen_stamina(delta)
+
+	if(Input.is_action_just_pressed("RangedAttack")):
+		try_fire_projectile()
 
 func _die():
 	super()

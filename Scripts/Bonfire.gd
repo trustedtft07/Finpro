@@ -11,8 +11,13 @@ func _ready():
 	label.visible = false
 
 func _process(_delta):
-	if(player_in_range && Input.is_action_just_pressed("Enter")):
+	if(player_in_range && Input.is_action_just_pressed("Enter") && _player_is_alive()):
 		rest()
+
+#Same reason as AreaExit: the death screen also binds 'E', and a corpse shouldn't rest
+func _player_is_alive() -> bool:
+	var player = get_tree().get_first_node_in_group("Player") as CharacterBase
+	return is_instance_valid(player) and not player.is_dead
 
 func _on_body_entered(body):
 	if body.is_in_group("Player"):

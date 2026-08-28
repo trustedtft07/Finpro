@@ -21,7 +21,8 @@ var _stagger_timer : float = 0.0
 func is_staggered() -> bool:
 	return _stagger_timer > 0.0
 
-func _process(delta):
+#Physics frame: EnemyChaseState reads is_staggered() from Update()
+func _physics_process(delta):
 	super(delta)
 	if(_stagger_timer > 0.0):
 		_stagger_timer -= delta

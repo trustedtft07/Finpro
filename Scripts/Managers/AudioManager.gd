@@ -18,16 +18,20 @@ func _ready() -> void:
 
 #offset: start partway into the clip (seconds)
 func play_sound(audiostream : AudioStreamOggVorbis, offset : float, volume : float):
-	var available_player = audio_players[0]
+	var available_player : AudioStreamPlayer = null
 	for player in audio_players:
 		if not player.is_playing():
 			available_player = player
 			break
 
-	if available_player == null and audio_players.size() < max_players:
-		available_player = AudioStreamPlayer.new()
-		audio_players.append(available_player)
-		add_child(available_player)
+	#Grow the pool on demand, and only cut off a playing sound once it's maxed out
+	if available_player == null:
+		if audio_players.size() < max_players:
+			available_player = AudioStreamPlayer.new()
+			audio_players.append(available_player)
+			add_child(available_player)
+		else:
+			available_player = audio_players[0]
 
 	available_player.stream = audiostream
 	available_player.pitch_scale = randf_range(0.9, 1.1)

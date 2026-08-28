@@ -317,6 +317,8 @@ _data = {
 [node name="Enemy" type="CharacterBody2D" unique_id=336445000 node_paths=PackedStringArray("attack_node", "chase_node", "sprite", "healthbar", "hit_particles") groups=["Enemy"]]
 texture_filter = 1
 scale = Vector2(2, 2)
+collision_layer = 4
+collision_mask = 7
 script = ExtResource("1_db41y")
 attack_node = NodePath("FSM/enemy_attack_state")
 chase_node = NodePath("FSM/enemy_chase_state")
@@ -324,6 +326,7 @@ sprite = NodePath("AnimatedSprite2D")
 healthbar = NodePath("ProgressBar")
 health = 75
 flipped_horizontal = true
+iframe_duration = 0.15
 hit_particles = NodePath("HitParticles")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1402123658]
@@ -332,6 +335,8 @@ animation = &"Attack"
 autoplay = "Idle"
 
 [node name="HitBox" type="Area2D" parent="AnimatedSprite2D" unique_id=553719397]
+collision_layer = 16
+collision_mask = 2
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="AnimatedSprite2D/HitBox" unique_id=814029818]
 position = Vector2(-11.5, 0.75)
@@ -348,6 +353,8 @@ position = Vector2(1, 3)
 shape = SubResource("CapsuleShape2D_4mbmt")
 
 [node name="DetectionArea" type="Area2D" parent="." unique_id=157950419]
+collision_layer = 0
+collision_mask = 2
 
 [node name="DetectionShape" type="CollisionShape2D" parent="DetectionArea" unique_id=310067762]
 shape = SubResource("CircleShape2D_imcar")

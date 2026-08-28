@@ -13,15 +13,20 @@ func _ready():
 #region Signal Entering & Exiting
 
 func _on_body_entered(body):
-		if body.is_in_group("Player") and not talking:
+		if body.is_in_group("Player") and not talking and not line1.is_empty():
 			talk_tween()
 			speech.text = line1[randi() % line1.size()]
 
 func _on_body_exited(body):
 	if body.is_in_group("Player") and talking:
 		await get_tree().create_timer(show_text_duration).timeout
+		#The label can be gone by now if the scene changed mid-wait
+		if not is_instance_valid(speech):
+			return
 		speech.text = "*murmur*"
 		await get_tree().create_timer(silence_duration).timeout
+		if not is_instance_valid(speech):
+			return
 		speech.text = ""
 		talking = false
 

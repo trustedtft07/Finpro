@@ -5,6 +5,8 @@ a = Vector2(17, 3)
 b = Vector2(-11, 3)
 
 [node name="AreaBlocker" type="StaticBody2D"]
+collision_layer = 1
+collision_mask = 0
 position = Vector2(13, 9)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]

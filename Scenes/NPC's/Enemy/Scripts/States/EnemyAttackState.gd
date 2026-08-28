@@ -47,7 +47,7 @@ func _run_parry_telegraph(swing_id : int):
 #Called on parry - re-disables the hitbox mid-swing
 func cancel():
 	_swing_id += 1
-	hitbox_shape.disabled = true
+	hitbox_shape.set_deferred("disabled", true)
 	if parry_indicator:
 		parry_indicator.visible = false
 

@@ -1,0 +1,64 @@
+[gd_scene format=3 uid="uid://dlg33pvnmbo6a"]
+
+[ext_resource type="Script" uid="uid://chi43oy4m81j3" path="res://Scripts/PauseMenu.gd" id="1_pause1"]
+[ext_resource type="LabelSettings" uid="uid://1cnb4418rr7" path="res://Art/Fonts/pixelized_label_large.tres" id="2_title1"]
+[ext_resource type="LabelSettings" uid="uid://da8inon5cmt2r" path="res://Art/Fonts/pixelized_label.tres" id="3_body1"]
+
+[node name="PauseMenu" type="CanvasLayer" unique_id=1382384073 node_paths=PackedStringArray("panel")]
+process_mode = 3
+layer = 3
+script = ExtResource("1_pause1")
+panel = NodePath("Panel")
+
+[node name="Panel" type="Control" parent="." unique_id=875503668]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="ColorRect" parent="Panel" unique_id=566460922]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.8)
+
+[node name="Title" type="Label" parent="Panel" unique_id=1513683073]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = 120.0
+offset_right = 100.0
+offset_bottom = 146.0
+grow_horizontal = 2
+text = "PAUSED"
+label_settings = ExtResource("2_title1")
+horizontal_alignment = 1
+
+[node name="Options" type="Label" parent="Panel" unique_id=1071937407]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -40.0
+offset_right = 200.0
+offset_bottom = 90.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Escape - Resume
+R - Respawn at your last bonfire
+E - Return to the first level
+X - Quit game"
+label_settings = ExtResource("3_body1")
+horizontal_alignment = 1
+vertical_alignment = 1

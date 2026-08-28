@@ -38,6 +38,7 @@
 [ext_resource type="PackedScene" uid="uid://dxk3nar7q2h5n" path="res://Scenes/Misc/MechanicsPanel.tscn" id="36_mech1"]
 [ext_resource type="Script" uid="uid://ckl0xpkxj1vcs" path="res://Scenes/Player/Scripts/States/PlayerParryState.gd" id="37_parry1"]
 [ext_resource type="Script" uid="uid://dwrmagmh6auml" path="res://Scenes/Player/Scripts/ParryShield.gd" id="38_shield1"]
+[ext_resource type="PackedScene" path="res://Scenes/Misc/PauseMenu.tscn" id="39_pause1"]
 
 [sub_resource type="OccluderPolygon2D" id="OccluderPolygon2D_uky13"]
 polygon = PackedVector2Array(-2, -13, -8, -13, -10, -11, -10, -2, -4, 2, -4, 10, 5, 10, 5, 2, 10, -1, 10, -10, 8, -13)
@@ -431,6 +432,8 @@ _data = {
 [node name="Player" type="CharacterBody2D" unique_id=784215348 node_paths=PackedStringArray("staminabar", "aim_indicator", "heal_bar", "manabar", "sprite", "healthbar", "hit_particles") groups=["Player"]]
 top_level = true
 texture_filter = 1
+collision_layer = 2
+collision_mask = 5
 floor_stop_on_slope = false
 floor_block_on_wall = false
 script = ExtResource("1_y5oq4")
@@ -480,6 +483,8 @@ amount = 70
 [node name="Hitboxes" type="Node2D" parent="AnimatedSprite2D" unique_id=169745481]
 
 [node name="Punch_Hitbox" type="Area2D" parent="AnimatedSprite2D/Hitboxes" unique_id=1031849917]
+collision_layer = 8
+collision_mask = 4
 
 [node name="hitboxShape" type="CollisionShape2D" parent="AnimatedSprite2D/Hitboxes/Punch_Hitbox" unique_id=1284734896]
 position = Vector2(20, 0)
@@ -487,6 +492,8 @@ shape = SubResource("RectangleShape2D_wk4mn")
 disabled = true
 
 [node name="Kick_Hitbox" type="Area2D" parent="AnimatedSprite2D/Hitboxes" unique_id=712122799]
+collision_layer = 8
+collision_mask = 4
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="AnimatedSprite2D/Hitboxes/Kick_Hitbox" unique_id=167787258]
 shape = SubResource("CircleShape2D_mkwab")
@@ -511,8 +518,9 @@ initial_state = NodePath("Idle")
 script = ExtResource("26_28u22")
 animator = NodePath("../../AnimationPlayer")
 
-[node name="Attacking" type="Node" parent="FSM" unique_id=33246904 node_paths=PackedStringArray("animator", "attacks")]
+[node name="Attacking" type="Node" parent="FSM" unique_id=33246904 node_paths=PackedStringArray("combo_text", "animator", "attacks")]
 script = ExtResource("27_j1lrx")
+combo_text = NodePath("../../Camera2D/ComboText")
 animator = NodePath("../../AnimationPlayer")
 attacks = [NodePath("PunchAttack"), NodePath("KickAttack")]
 
@@ -663,7 +671,8 @@ Q - Ranged
 F - Parry
 H - Heal
 E - Interact
-I - Mechanics"
+I - Mechanics
+Esc - Pause"
 label_settings = ExtResource("28_5mc6f")
 horizontal_alignment = 2
 paragraph_separator = "/"
@@ -684,6 +693,21 @@ label_settings = ExtResource("34_aqkdi")
 horizontal_alignment = 1
 uppercase = true
 
+[node name="ComboText" type="Label" parent="Camera2D" unique_id=1114666202]
+modulate = Color(1, 1, 1, 0)
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -64.0
+offset_top = -60.0
+offset_right = 64.0
+offset_bottom = -40.0
+grow_horizontal = 2
+pivot_offset = Vector2(64, 10)
+text = "COMBO 1"
+label_settings = ExtResource("28_5mc6f")
+horizontal_alignment = 1
+
 [node name="hit_particle_blood" type="GPUParticles2D" parent="." unique_id=1374123866]
 emitting = false
 amount = 200
@@ -696,6 +720,8 @@ process_material = SubResource("ParticleProcessMaterial_wrxbo")
 libraries/ = SubResource("AnimationLibrary_gtuut")
 
 [node name="MechanicsPanel" parent="." unique_id=979520326 instance=ExtResource("36_mech1")]
+
+[node name="PauseMenu" parent="." unique_id=979520327 instance=ExtResource("39_pause1")]
 
 [node name="QuestTracker" type="Node2D" parent="." unique_id=53938960 node_paths=PackedStringArray("quest_info", "quest_announcement")]
 script = ExtResource("33_2eisr")

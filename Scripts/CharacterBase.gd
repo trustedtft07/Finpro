@@ -6,9 +6,13 @@ class_name CharacterBase
 @export var health : int
 @export var flipped_horizontal : bool
 @export var hit_particles : GPUParticles2D
+#How long hits are ignored after taking damage. Independent of the flash below - tying
+#the two together gave enemies 0.4s of immunity and ate every follow-up combo hit.
+@export var iframe_duration : float = 0.4
 var invincible : bool = false
 #Separate from 'invincible' so a dodge roll's i-frames aren't cut short by the damage-flash tween
 var dodge_invincible : bool = false
+var _flash_tween : Tween
 var is_dead : bool = false
 var max_health : int
 
@@ -19,8 +23,14 @@ var _knockback_timer : float = 0.0
 func _ready():
 	init_character()
 
-func _process(delta):
+#Purely visual, so the render frame is the right place for it
+func _process(_delta):
 	Turn()
+
+#Anything that calls move_and_slide() belongs on the physics frame - move_and_slide()
+#always steps by the physics delta, so driving it from _process() would scale the
+#distance travelled with the monitor's refresh rate
+func _physics_process(delta):
 	_process_knockback(delta)
 
 func init_character():
@@ -74,13 +84,21 @@ func damage_effects():
 
 func after_damage_iframes():
 	invincible = true
-	var tween = create_tween()
-	tween.tween_property(self, "modulate", Color.DARK_RED, 0.1)
-	tween.tween_property(self, "modulate", Color.WHITE, 0.1)
-	tween.tween_property(self, "modulate", Color.RED, 0.1)
-	tween.tween_property(self, "modulate", Color.WHITE, 0.1)
-	await tween.finished
+	_play_damage_flash()
+	await get_tree().create_timer(iframe_duration).timeout
 	invincible = false
+
+#Cosmetic only. Restarted (not stacked) on a fresh hit so two tweens never fight over
+#modulate and leave the sprite stuck red.
+func _play_damage_flash():
+	if(_flash_tween and _flash_tween.is_valid()):
+		_flash_tween.kill()
+
+	_flash_tween = create_tween()
+	_flash_tween.tween_property(self, "modulate", Color.DARK_RED, 0.1)
+	_flash_tween.tween_property(self, "modulate", Color.WHITE, 0.1)
+	_flash_tween.tween_property(self, "modulate", Color.RED, 0.1)
+	_flash_tween.tween_property(self, "modulate", Color.WHITE, 0.1)
 
 func _take_damage(amount):
 	if(invincible == true || dodge_invincible == true || is_dead == true):

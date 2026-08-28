@@ -13,12 +13,16 @@
 [ext_resource type="PackedScene" uid="uid://b6xb8nhlqtuhf" path="res://Scenes/ScoreTracker.tscn" id="11_6cy1t"]
 [ext_resource type="PackedScene" uid="uid://48vtm5vekhaq" path="res://Scenes/QuestUpdate.tscn" id="13_fd737"]
 [ext_resource type="Script" uid="uid://dcl2grh0133eo" path="res://Scripts/QuestGeneral/Quest.gd" id="14_itxyw"]
+[ext_resource type="PackedScene" uid="uid://c8qy3n0m4tqxk" path="res://Scenes/Interactables/Bonfire.tscn" id="15_bnfr1"]
 
 [node name="Scene_Root" type="Node2D" unique_id=2033710491]
 texture_filter = 1
 
 [node name="Player" parent="." unique_id=1902717743 instance=ExtResource("1_v023b")]
 position = Vector2(-85, -117)
+
+[node name="Bonfire" parent="." unique_id=1902717744 instance=ExtResource("15_bnfr1")]
+position = Vector2(-85, -75)
 
 [node name="NPCs" type="Node" parent="." unique_id=830338910]
 
@@ -115,6 +119,6 @@ type = 3
 script = ExtResource("14_itxyw")
 quest_id = 1
 quest_name = "Explore"
-quest_objective = Array[String](["Expore the corridoors", "Find a way past the enemy"])
+quest_objective = Array[String](["Explore the corridors", "Find a way past the enemy"])
 
 [node name="Score_UI" parent="." unique_id=1158410990 instance=ExtResource("11_6cy1t")]

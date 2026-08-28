@@ -9,6 +9,8 @@
 radius = 40.0
 
 [node name="Bonfire" type="Area2D" node_paths=PackedStringArray("label", "glow", "ember")]
+collision_layer = 32
+collision_mask = 2
 z_index = 5
 texture_filter = 1
 script = ExtResource("1_bnfr1")

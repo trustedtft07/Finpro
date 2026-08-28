@@ -18,7 +18,9 @@ func _ready():
 		initial_state.Enter()
 		current_state = initial_state
 
-func _process(delta):
+#_physics_process, not _process: states drive move_and_slide() from Update(), which
+#steps by the physics delta no matter where it's called from
+func _physics_process(delta):
 	if current_state:
 		current_state.Update(delta)
 
