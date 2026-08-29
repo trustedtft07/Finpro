@@ -1,0 +1,100 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Scripts/Boss/BossHUD.gd" id="1_hud"]
+[ext_resource type="LabelSettings" uid="uid://da8inon5cmt2r" path="res://Art/Fonts/pixelized_label.tres" id="2_font"]
+
+[sub_resource type="StyleBoxFlat" id="Track"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.04, 0.03, 0.03, 0.85)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.42, 0.36, 0.26, 0.9)
+
+[sub_resource type="StyleBoxFlat" id="LagFill"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.62, 0.14, 0.12, 0.95)
+
+[sub_resource type="StyleBoxEmpty" id="NoTrack"]
+
+[sub_resource type="StyleBoxFlat" id="Fill"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.85, 0.79, 0.6, 1)
+
+[node name="BossHUD" type="CanvasLayer" node_paths=PackedStringArray("root", "bar", "lag_bar", "name_label")]
+layer = 2
+script = ExtResource("1_hud")
+root = NodePath("Root")
+bar = NodePath("Root/Frame/Bar")
+lag_bar = NodePath("Root/Frame/LagBar")
+name_label = NodePath("Root/Frame/Name")
+
+[node name="Root" type="Control" parent="."]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Frame" type="Control" parent="Root"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -286.0
+offset_top = -62.0
+offset_right = 286.0
+offset_bottom = -22.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="LagBar" type="ProgressBar" parent="Root/Frame"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 11.0
+grow_horizontal = 2
+theme_override_styles/background = SubResource("Track")
+theme_override_styles/fill = SubResource("LagFill")
+max_value = 1000.0
+value = 1000.0
+show_percentage = false
+
+[node name="Bar" type="ProgressBar" parent="Root/Frame"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 11.0
+grow_horizontal = 2
+theme_override_styles/background = SubResource("NoTrack")
+theme_override_styles/fill = SubResource("Fill")
+max_value = 1000.0
+value = 1000.0
+show_percentage = false
+
+[node name="Name" type="Label" parent="Root/Frame"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 14.0
+offset_bottom = 34.0
+grow_horizontal = 2
+text = "Boss"
+label_settings = ExtResource("2_font")
+horizontal_alignment = 1

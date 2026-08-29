@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Scripts/Boss/BossBeam.gd" id="1_beam"]
+[ext_resource type="Texture2D" path="res://Art/Boss/BossBeam.png" id="2_tex"]
+
+[sub_resource type="AtlasTexture" id="BeamArt"]
+atlas = ExtResource("2_tex")
+region = Rect2(0, 0, 48, 80)
+
+[node name="BossBeam" type="Node2D" node_paths=PackedStringArray("beam_sprite")]
+z_index = 5
+texture_filter = 1
+script = ExtResource("1_beam")
+beam_sprite = NodePath("Beam")
+
+[node name="Beam" type="Sprite2D" parent="."]
+modulate = Color(1.25, 1.25, 1.35, 0)
+texture = SubResource("BeamArt")
+centered = false
+offset = Vector2(-24, 0)

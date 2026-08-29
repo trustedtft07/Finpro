@@ -68,7 +68,9 @@ H - Heal: limited charges, can be interrupted (wasting the charge) if hit
 BONFIRE
 Press E to rest: full heal, refill stamina/mana/charges, set your respawn
 QUICK TRAVEL
-1 - Forest (sandbox)   2 - Green Forest
+1 - Forest   2 - Green Forest   3 - Undead Forest   4 - Boss Arena
+DEBUG
+\\ - God Mode: no damage, unlimited stamina, mana and heals
 PAUSE
 Escape - pause the game, respawn, return to the first level, or quit
 Press I again to close"

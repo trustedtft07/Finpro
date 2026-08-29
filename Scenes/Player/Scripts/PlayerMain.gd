@@ -20,6 +20,8 @@ func has_heal_charge() -> bool:
 	return heal_charges > 0
 
 func use_heal_charge():
+	if GameManager.god_mode:
+		return
 	heal_charges -= 1
 	GameManager.heal_charges = heal_charges
 	_update_heal_bar()
@@ -77,6 +79,8 @@ func has_stamina(amount : float) -> bool:
 	return stamina >= amount
 
 func use_stamina(amount : float):
+	if GameManager.god_mode:
+		return
 	stamina = clampf(stamina - amount, 0, max_stamina)
 	_stamina_regen_timer = stamina_regen_delay
 	_update_staminabar()
@@ -104,6 +108,8 @@ func has_mana(amount : float) -> bool:
 	return mana >= amount
 
 func use_mana(amount : float):
+	if GameManager.god_mode:
+		return
 	mana = clampf(mana - amount, 0, max_mana)
 	_update_manabar()
 
@@ -159,9 +165,18 @@ func _ready():
 
 #Only interrupt on hits that actually land, not ones blocked by an i-frame
 func _take_damage(amount):
+	#Debug god mode ('\'): no damage, and no heal interrupt either
+	if GameManager.god_mode:
+		return
 	if(fsm.current_state.name == "Healing" && !invincible && !dodge_invincible):
 		fsm.current_state.interrupt()
 	super._take_damage(amount)
+
+#Being shoved around by attacks that deal no damage just gets in the way while debugging
+func apply_knockback(direction : Vector2, force : float, duration : float = 0.15):
+	if GameManager.god_mode:
+		return
+	super.apply_knockback(direction, force, duration)
 
 func _process(delta):
 	super(delta)

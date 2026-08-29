@@ -1,0 +1,49 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Scripts/Boss/BossMain.gd" id="1_boss"]
+[ext_resource type="SpriteFrames" path="res://Art/Boss/BossPhase1Frames.tres" id="2_p1"]
+[ext_resource type="SpriteFrames" path="res://Art/Boss/BossPhase2Frames.tres" id="3_p2"]
+[ext_resource type="PackedScene" path="res://Scenes/Boss/BossHUD.tscn" id="4_hud"]
+[ext_resource type="PackedScene" path="res://Scenes/Boss/BossBeam.tscn" id="5_beam"]
+[ext_resource type="PackedScene" path="res://Scenes/Boss/BossShard.tscn" id="6_shard"]
+[ext_resource type="PackedScene" path="res://Scenes/Boss/BossLightning.tscn" id="7_bolt"]
+[ext_resource type="Script" path="res://Scripts/FSM/FiniteStateMachine.gd" id="8_fsm"]
+
+[sub_resource type="CircleShape2D" id="Body"]
+radius = 26.0
+
+[node name="Boss" type="CharacterBody2D" groups=["Enemy"] node_paths=PackedStringArray("sprite", "healthbar", "collider", "hud")]
+texture_filter = 1
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_boss")
+sprite = NodePath("Sprite")
+healthbar = NodePath("BossHUD/Root/Frame/Bar")
+health = 1400
+flipped_horizontal = true
+iframe_duration = 0.12
+phase1_scale = 3.0
+phase1_frames = ExtResource("2_p1")
+phase2_frames = ExtResource("3_p2")
+beam_scene = ExtResource("5_beam")
+shard_scene = ExtResource("6_shard")
+lightning_scene = ExtResource("7_bolt")
+collider = NodePath("Collider")
+hud = NodePath("BossHUD")
+
+[node name="Sprite" type="AnimatedSprite2D" parent="."]
+scale = Vector2(3, 3)
+sprite_frames = ExtResource("2_p1")
+animation = &"idle"
+offset = Vector2(1, -19)
+
+[node name="Collider" type="CollisionShape2D" parent="."]
+position = Vector2(0, -6)
+shape = SubResource("Body")
+
+[node name="BossHUD" parent="." instance=ExtResource("4_hud")]
+
+; EnemyMain expects an FSM child; the boss drives its own act machine instead, so
+; this one stays empty.
+[node name="FSM" type="Node" parent="."]
+script = ExtResource("8_fsm")

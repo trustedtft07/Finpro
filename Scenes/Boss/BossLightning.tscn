@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Scripts/Boss/BossLightning.gd" id="1_bolt"]
+[ext_resource type="SpriteFrames" path="res://Art/Boss/BossFxFrames.tres" id="2_fx"]
+
+[node name="BossLightning" type="Node2D" node_paths=PackedStringArray("bolt_sprite")]
+texture_filter = 1
+script = ExtResource("1_bolt")
+bolt_sprite = NodePath("Bolt")
+
+[node name="Bolt" type="AnimatedSprite2D" parent="."]
+modulate = Color(1.55, 1.4, 1.1, 1)
+visible = false
+scale = Vector2(2.4, 2.4)
+sprite_frames = ExtResource("2_fx")
+animation = &"lightning"
+offset = Vector2(0, -30)

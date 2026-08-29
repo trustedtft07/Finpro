@@ -1,0 +1,26 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Scripts/Boss/BossShard.gd" id="1_shard"]
+[ext_resource type="SpriteFrames" path="res://Art/Boss/BossFxFrames.tres" id="2_fx"]
+
+[sub_resource type="CircleShape2D" id="Body"]
+radius = 7.0
+
+[node name="BossShard" type="Area2D" node_paths=PackedStringArray("spin_sprite")]
+z_index = 4
+texture_filter = 1
+collision_layer = 16
+collision_mask = 3
+script = ExtResource("1_shard")
+spin_sprite = NodePath("Sprite")
+
+[node name="Sprite" type="AnimatedSprite2D" parent="."]
+scale = Vector2(1.6, 1.6)
+sprite_frames = ExtResource("2_fx")
+animation = &"star"
+autoplay = "star"
+
+[node name="Shape" type="CollisionShape2D" parent="."]
+shape = SubResource("Body")
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]

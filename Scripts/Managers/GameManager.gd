@@ -5,18 +5,64 @@ extends Node
 const QUICK_TRAVEL = {
 	"TeleportForest": "res://Scenes/Levels/Forest.tscn",
 	"TeleportGreenForest": "res://Scenes/Levels/GreenForest.tscn",
+	"TeleportUndeadForest": "res://Scenes/Levels/UndeadForest.tscn",
+	"TeleportBossPlace": "res://Scenes/Levels/BossPlace.tscn",
 }
 
 var money = 0
 var _hitstop_token := 0
 
 func _process(_delta):
+	if Input.is_action_just_pressed("GodMode"):
+		toggle_god_mode()
+
 	for action in QUICK_TRAVEL:
 		if Input.is_action_just_pressed(action):
 			var path = QUICK_TRAVEL[action]
 			if get_tree().current_scene.scene_file_path != path:
 				get_tree().change_scene_to_file(path)
 			return
+
+#region Debug god mode
+#Toggled with '\'. PlayerMain checks this flag in the four places that spend a
+#resource or take a hit, so nothing has to be reset when it is switched back off.
+var god_mode : bool = false
+var _god_banner : Label
+
+func toggle_god_mode():
+	god_mode = !god_mode
+	_show_god_banner()
+	if not god_mode:
+		return
+	#Top everything up, so a run that was already drained is usable straight away
+	var player = get_tree().get_first_node_in_group("Player")
+	if is_instance_valid(player) and player.has_method("full_restore"):
+		player.full_restore()
+
+#Lives on the autoload, so it survives scene changes like the flag it reports
+func _show_god_banner():
+	if not is_instance_valid(_god_banner):
+		var layer = CanvasLayer.new()
+		layer.layer = 100
+		add_child(layer)
+		_god_banner = Label.new()
+		_god_banner.label_settings = load("res://Art/Fonts/pixelized_label.tres")
+		_god_banner.set_anchors_preset(Control.PRESET_TOP_WIDE)
+		_god_banner.offset_top = 8.0
+		_god_banner.offset_bottom = 28.0
+		_god_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_god_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_god_banner.modulate = Color(1.0, 0.85, 0.35)
+		layer.add_child(_god_banner)
+	_god_banner.text = "GOD MODE ON" if god_mode else "GOD MODE OFF"
+	_god_banner.visible = true
+	if god_mode:
+		return
+	#The "off" message is only worth a moment
+	var tween = create_tween()
+	tween.tween_interval(1.2)
+	tween.tween_callback(func(): if is_instance_valid(_god_banner): _god_banner.visible = false)
+#endregion
 
 #Brief slow-motion freeze-frame for hit feedback. Safe to call from overlapping hits;
 #only the most recent call restores time_scale, so a second hit extends the freeze
