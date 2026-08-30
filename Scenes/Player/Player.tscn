@@ -38,6 +38,7 @@
 [ext_resource type="PackedScene" uid="uid://dxk3nar7q2h5n" path="res://Scenes/Misc/MechanicsPanel.tscn" id="36_mech1"]
 [ext_resource type="Script" uid="uid://ckl0xpkxj1vcs" path="res://Scenes/Player/Scripts/States/PlayerParryState.gd" id="37_parry1"]
 [ext_resource type="Script" uid="uid://dwrmagmh6auml" path="res://Scenes/Player/Scripts/ParryShield.gd" id="38_shield1"]
+[ext_resource type="Script" path="res://Scenes/Player/Scripts/AttackAura.gd" id="40_aura1"]
 [ext_resource type="PackedScene" path="res://Scenes/Misc/PauseMenu.tscn" id="39_pause1"]
 
 [sub_resource type="OccluderPolygon2D" id="OccluderPolygon2D_uky13"]
@@ -164,9 +165,10 @@ color = Color(0.45, 1, 0.55, 0.5)
 alpha_curve = SubResource("CurveTexture_j105i")
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wk4mn"]
+size = Vector2(66, 40)
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_mkwab"]
-radius = 25.0
+radius = 42.0
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_7m131"]
 radius = 8.06226
@@ -486,8 +488,9 @@ amount = 70
 collision_layer = 8
 collision_mask = 4
 
+; 40 + half of 66 puts the far edge 73px out, up from the old 30
 [node name="hitboxShape" type="CollisionShape2D" parent="AnimatedSprite2D/Hitboxes/Punch_Hitbox" unique_id=1284734896]
-position = Vector2(20, 0)
+position = Vector2(40, -8)
 shape = SubResource("RectangleShape2D_wk4mn")
 disabled = true
 
@@ -498,6 +501,11 @@ collision_mask = 4
 [node name="CollisionShape2D" type="CollisionShape2D" parent="AnimatedSprite2D/Hitboxes/Kick_Hitbox" unique_id=167787258]
 shape = SubResource("CircleShape2D_mkwab")
 disabled = true
+
+[node name="AttackAura" type="Node2D" parent="AnimatedSprite2D" node_paths=PackedStringArray("shapes", "character")]
+script = ExtResource("40_aura1")
+shapes = [NodePath("../Hitboxes/Punch_Hitbox/hitboxShape"), NodePath("../Hitboxes/Kick_Hitbox/CollisionShape2D")]
+character = NodePath("../..")
 
 [node name="ParryShield" type="Node2D" parent="." unique_id=203409573]
 script = ExtResource("38_shield1")

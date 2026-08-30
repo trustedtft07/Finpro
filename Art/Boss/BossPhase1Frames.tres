@@ -112,65 +112,57 @@ region = Rect2(128, 320, 128, 64)
 
 [sub_resource type="AtlasTexture" id="A27"]
 atlas = ExtResource("1_tex")
-region = Rect2(256, 320, 128, 64)
+region = Rect2(704, 320, 128, 64)
 
 [sub_resource type="AtlasTexture" id="A28"]
 atlas = ExtResource("1_tex")
-region = Rect2(384, 320, 128, 64)
+region = Rect2(832, 320, 128, 64)
 
 [sub_resource type="AtlasTexture" id="A29"]
 atlas = ExtResource("1_tex")
-region = Rect2(512, 320, 128, 64)
+region = Rect2(452, 320, 128, 64)
 
 [sub_resource type="AtlasTexture" id="A30"]
 atlas = ExtResource("1_tex")
-region = Rect2(640, 320, 128, 64)
+region = Rect2(0, 384, 64, 64)
 
 [sub_resource type="AtlasTexture" id="A31"]
 atlas = ExtResource("1_tex")
-region = Rect2(768, 320, 128, 64)
+region = Rect2(128, 384, 64, 64)
 
 [sub_resource type="AtlasTexture" id="A32"]
 atlas = ExtResource("1_tex")
-region = Rect2(0, 384, 64, 64)
+region = Rect2(0, 448, 64, 64)
 
 [sub_resource type="AtlasTexture" id="A33"]
 atlas = ExtResource("1_tex")
-region = Rect2(128, 384, 64, 64)
+region = Rect2(128, 448, 64, 64)
 
 [sub_resource type="AtlasTexture" id="A34"]
 atlas = ExtResource("1_tex")
-region = Rect2(0, 448, 64, 64)
+region = Rect2(256, 448, 64, 64)
 
 [sub_resource type="AtlasTexture" id="A35"]
 atlas = ExtResource("1_tex")
-region = Rect2(128, 448, 64, 64)
+region = Rect2(384, 448, 64, 64)
 
 [sub_resource type="AtlasTexture" id="A36"]
 atlas = ExtResource("1_tex")
-region = Rect2(256, 448, 64, 64)
+region = Rect2(512, 448, 64, 64)
 
 [sub_resource type="AtlasTexture" id="A37"]
 atlas = ExtResource("1_tex")
-region = Rect2(384, 448, 64, 64)
+region = Rect2(640, 448, 64, 64)
 
 [sub_resource type="AtlasTexture" id="A38"]
 atlas = ExtResource("1_tex")
-region = Rect2(512, 448, 64, 64)
+region = Rect2(768, 448, 64, 64)
 
 [sub_resource type="AtlasTexture" id="A39"]
 atlas = ExtResource("1_tex")
-region = Rect2(640, 448, 64, 64)
-
-[sub_resource type="AtlasTexture" id="A40"]
-atlas = ExtResource("1_tex")
-region = Rect2(768, 448, 64, 64)
-
-[sub_resource type="AtlasTexture" id="A41"]
-atlas = ExtResource("1_tex")
 region = Rect2(896, 448, 64, 64)
 
-[sub_resource type="AtlasTexture" id="A42"]
+[sub_resource type="AtlasTexture" id="A40"]
 atlas = ExtResource("1_tex")
 region = Rect2(1024, 448, 64, 64)
 
@@ -267,21 +259,26 @@ animations = [{
 "speed": 10.0
 }, {
 "frames": [{
-"duration": 1.0,
+"duration": 3.5,
 "texture": SubResource("A25")
 }, {
-"duration": 1.0,
+"duration": 2.0,
 "texture": SubResource("A26")
 }, {
-"duration": 1.0,
+"duration": 1.5,
 "texture": SubResource("A27")
 }, {
 "duration": 1.0,
 "texture": SubResource("A28")
 }, {
-"duration": 1.0,
+"duration": 1.5,
 "texture": SubResource("A29")
+}],
+"loop": false,
+"name": &"cleave",
+"speed": 10.0
 }, {
+"frames": [{
 "duration": 1.0,
 "texture": SubResource("A30")
 }, {
@@ -289,8 +286,8 @@ animations = [{
 "texture": SubResource("A31")
 }],
 "loop": false,
-"name": &"dash",
-"speed": 12.0
+"name": &"hurt",
+"speed": 10.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -298,12 +295,7 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": SubResource("A33")
-}],
-"loop": false,
-"name": &"hurt",
-"speed": 10.0
 }, {
-"frames": [{
 "duration": 1.0,
 "texture": SubResource("A34")
 }, {
@@ -324,12 +316,6 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": SubResource("A40")
-}, {
-"duration": 1.0,
-"texture": SubResource("A41")
-}, {
-"duration": 1.0,
-"texture": SubResource("A42")
 }],
 "loop": false,
 "name": &"death",

@@ -25,17 +25,38 @@ def grid(row, count, w=64, h=64, pitch=128):
 #Rows 0-3 are all idle/walk variants - the sword only bobs and the body never moves,
 #so none of them is an attack. Measured on the sheet: the body centroid shifts at most
 #1.3px across those rows, and the weapon pixel count stays flat. The sheet's real
-#attacks are row 4 (ground slam: shockwave on frame 4, dome on frame 8) and row 5
-#(dash thrust: the character's shadow jumps 66px on frame 2). Row 5 needs the full
-#128-wide cell because the character travels inside its own frame.
-DASH_ROW = 5
+#attacks are row 4 (ground slam: a filled ellipse on frame 4 and a dome on frame 8,
+#both centred on the character - an all-directions move) and row 5 (a forward lunge:
+#a lance streak, then two sweep crescents - a one-direction move).
+#
+#Row 5 is root-motioned: the character walks ~66 art px across its own 128-wide cell.
+#Packing it verbatim made the boss slide across the arena, which is why the dash was
+#cut. It comes back here as "cleave" with the travel taken out of the pack instead of
+#out of the script: every frame is cropped at its own travel offset, so the character
+#lands on the usual (31, 50) anchor in all of them and only the slash moves.
+#
+#The travels are the offset of the frame's ground shadow (the one translucent
+#colour on the sheet, 35/0/56 at alpha 57) from the shadow in the idle pose, measured
+#off its LEFT edge - the sweep crescents are drawn over the right half of the shadow,
+#so that edge is the only one visible in every frame.
+#
+#Column 2 is left out on purpose. It draws the lunge's motion trail, a dark bar 39
+#art px BEHIND the character - which is right for someone who just travelled through
+#it, and wrong for a boss standing still. The rest re-times into windup -> lance ->
+#sweep -> recover, with the durations holding the two frames that connect.
+CLEAVE_ROW = 5
+#(source column, travel to cancel, frame duration)
+CLEAVE = [(0, 0, 3.5), (1, 0, 2.0),
+          (5, 64, 1.5), (6, 64, 1.0), (3, 68, 1.5)]
+
 PHASE1 = [
-    ('idle',  grid(0, 7),   8.0,  True),
-    ('walk',  grid(1, 4),   8.0,  True),
-    ('slam',  grid(4, 14),  10.0, False),
-    ('dash',  [(c * 128, DASH_ROW * 64, 128, 64) for c in range(7)], 12.0, False),
-    ('hurt',  grid(6, 2),   10.0, False),
-    ('death', grid(7, 9),   10.0, False),
+    ('idle',   grid(0, 7),  8.0,  True),
+    ('walk',   grid(1, 4),  8.0,  True),
+    ('slam',   grid(4, 14), 10.0, False),
+    ('cleave', [(c * 128 + t, CLEAVE_ROW * 64, 128, 64, d) for c, t, d in CLEAVE],
+               10.0, False),
+    ('hurt',   grid(6, 2),  10.0, False),
+    ('death',  grid(7, 9),  10.0, False),
 ]
 
 CELL = 64
@@ -75,13 +96,17 @@ def write(path, tex, anims):
     body = []
     for name, rects, speed, loop in anims:
         frames = []
-        for (x, y, w, h) in rects:
+        for rect in rects:
+            x, y, w, h = rect[:4]
+            #a 5th element holds a per-frame duration, in frame units
+            duration = rect[4] if len(rect) > 4 else 1.0
             rid = 'A%d' % idx
             idx += 1
             lines += ['[sub_resource type="AtlasTexture" id="%s"]' % rid,
                       'atlas = ExtResource("1_tex")',
                       'region = Rect2(%d, %d, %d, %d)' % (x, y, w, h), '']
-            frames.append('{\n"duration": 1.0,\n"texture": SubResource("%s")\n}' % rid)
+            frames.append('{\n"duration": %.1f,\n"texture": SubResource("%s")\n}'
+                          % (duration, rid))
         body.append('{\n"frames": [%s],\n"loop": %s,\n"name": &"%s",\n"speed": %.1f\n}'
                     % (', '.join(frames), 'true' if loop else 'false', name, speed))
     lines += ['[resource]', 'animations = [%s]' % ', '.join(body), '']

@@ -12,6 +12,9 @@
 [sub_resource type="CircleShape2D" id="Body"]
 radius = 26.0
 
+; Sword.png is drawn facing right - the lunge travels right and the cleave crescents
+; sweep right - so the sprite is only mirrored when the player is to the left, which
+; is what flipped_horizontal=false gives. Phase 2 is symmetrical and never mirrors.
 [node name="Boss" type="CharacterBody2D" groups=["Enemy"] node_paths=PackedStringArray("sprite", "healthbar", "collider", "hud")]
 texture_filter = 1
 collision_layer = 4
@@ -20,7 +23,6 @@ script = ExtResource("1_boss")
 sprite = NodePath("Sprite")
 healthbar = NodePath("BossHUD/Root/Frame/Bar")
 health = 1400
-flipped_horizontal = true
 iframe_duration = 0.12
 phase1_scale = 3.0
 phase1_frames = ExtResource("2_p1")

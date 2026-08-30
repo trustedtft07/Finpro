@@ -111,12 +111,52 @@ are real attacks:
 | Row | Move | Impact frames | Measured |
 | --- | --- | --- | --- |
 | 4 | ground slam | **4** (shockwave), **8** (dome) | shockwave spans 52 art px -> 78px radius at 3x; dome 41 px |
-| 5 | dash thrust | **2** (arrival) | the ground shadow jumps from x+0 to x+66 art px between frames 1 and 2 |
+| 5 | forward cleave | **1** (lance), **2** (sweep) | the lance streak runs 90 art px past the character and is ~15 art px thick; the sweep crescent reaches 29 |
 
 `BossMain` fires every hit from `sprite.frame`, never from a timer, so the damage
-window cannot drift away from the drawing. The dash is root-motioned: the character
-walks across its own 128px frame, so the script cancels that in `sprite.offset` and
-moves the body by the same amount, which keeps the collider on the drawing.
+window cannot drift away from the drawing. The two rows are deliberately different
+shapes, and phase 1 picks between them by range: row 4 draws a filled ellipse and then
+a dome, both centred on the character, so it hits as a **circle in every direction**;
+row 5 draws a streak along one axis, so it hits as a **band down that one line**, with
+the crescent that follows as a short wedge around the boss.
+
+Row 5 is root-motioned - the character walks ~66 art px across its own 128px cell. It
+used to be packed verbatim, with the script cancelling the travel in `sprite.offset`
+and moving the body by the same amount; on screen that read as the sprite sliding off
+its own body, so the move was pulled. It is back as `cleave` with the travel taken out
+of the **pack** instead: every frame is cropped at its own travel offset, so the
+character lands on the usual (31, 50) anchor in all of them and only the slash moves.
+The boss itself no longer travels at all. Those cells are the full 128 wide, so
+`BossMain.CLEAVE_CELL_OFFSET` swaps in for the duration of the animation - the two
+offsets put the character in the same spot, which is why the swap is invisible.
+
+Three things about that pack are easy to get wrong, and all three were, first time round:
+
+- **Measure the travel off the ground shadow, not the silhouette.** The shadow is the
+  sheet's only translucent colour (35/0/56 at alpha 57) and sits in a fixed spot under
+  the character, so it is the anchor. Correlating the body silhouette instead is
+  thrown off by the slash pixels drawn over it, which put two frames 1-2 art px out -
+  3-6px of sideways twitch on screen at 3x. Take the shadow's **left** edge: the sweep
+  crescents cover its right half.
+- **Not every frame survives being pinned.** Column 2 is the lunge's motion trail, a
+  dark bar drawn 39 art px behind the character. Behind someone who just travelled
+  through it that reads as speed; behind a boss standing still it reads as a plank
+  stuck through its back. It is left out of the pack.
+- **The offset and the animation have to move together.** The cleave is the only phase 1
+  animation in wide cells, so it rides `CLEAVE_CELL_OFFSET` while it plays. Putting that
+  offset back on its own - without starting a narrow-cell animation in the same breath -
+  leaves the last cleave frame on screen against the narrow offset, and 33 + (31 - 64) is
+  -32 art px: the boss is drawn 96px behind itself until something else finally plays.
+  Every exit out of the cleave goes through `BossMain._play_narrow()` for exactly this
+  reason, and `_smoke` checks the drawn anchor every physics frame rather than checking
+  the offset value, which is what let the bug through the first time.
+
+The lance is only ever drawn along the sprite's own x, so its hitbox takes its
+direction from the facing flip rather than from where the player is standing, and the
+boss only commits to the swing when the player is inside `cleave_band` of its own line.
+Stepping north or south out of that band is the dodge.
 
 Crystal Knight's swing draws its crescent on frame **3** of 5; that is when the shard
-fan leaves. The beam and the storm fire when the `cast` animation ends.
+fan leaves. The beam and the storm fire when the `cast` animation ends. The beam
+leaves the **lit core in the knight's head**, cell (32, 12.5) - `BossMain.HEAD_CELL` -
+and is aimed from that same point, so its hitbox is exactly the line it draws.
