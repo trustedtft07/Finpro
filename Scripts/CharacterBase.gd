@@ -6,8 +6,8 @@ class_name CharacterBase
 @export var health : int
 @export var flipped_horizontal : bool
 @export var hit_particles : GPUParticles2D
-#How long hits are ignored after taking damage. Independent of the flash below - tying
-#the two together gave enemies 0.4s of immunity and ate every follow-up combo hit.
+#Independent of the damage flash below - tying the two together gave enemies 0.4s of
+#immunity and ate every follow-up combo hit
 @export var iframe_duration : float = 0.4
 var invincible : bool = false
 #Separate from 'invincible' so a dodge roll's i-frames aren't cut short by the damage-flash tween
@@ -19,20 +19,18 @@ var max_health : int
 var knockback_velocity : Vector2 = Vector2.ZERO
 var is_knockbacked : bool = false
 var _knockback_timer : float = 0.0
-#Fast enough that the shove has nearly bled off by the time the duration below cuts it -
-#a knockback that is still travelling when its timer expires stops dead mid-slide
+#Fast enough that the shove has bled off before its timer cuts it, or it stops dead
+#mid-slide
 @export var knockback_decay : float = 2600.0
 
 func _ready():
 	init_character()
 
-#Purely visual, so the render frame is the right place for it
 func _process(_delta):
 	Turn()
 
-#Anything that calls move_and_slide() belongs on the physics frame - move_and_slide()
-#always steps by the physics delta, so driving it from _process() would scale the
-#distance travelled with the monitor's refresh rate
+#move_and_slide() always steps by the physics delta, so driving it from _process() would
+#scale distance travelled with the monitor's refresh rate
 func _physics_process(delta):
 	_process_knockback(delta)
 
@@ -56,7 +54,7 @@ func Turn():
 
 #region Knockback
 
-#Movement states must check is_knockbacked and skip setting velocity while this is active
+#Movement states must skip setting velocity while is_knockbacked
 func apply_knockback(direction : Vector2, force : float, duration : float = 0.15):
 	if force <= 0.0:
 		return
@@ -91,8 +89,7 @@ func after_damage_iframes():
 	await get_tree().create_timer(iframe_duration).timeout
 	invincible = false
 
-#Cosmetic only. Restarted (not stacked) on a fresh hit so two tweens never fight over
-#modulate and leave the sprite stuck red.
+#Restarted, not stacked, so two tweens never fight over modulate and leave it stuck red
 func _play_damage_flash():
 	if(_flash_tween and _flash_tween.is_valid()):
 		_flash_tween.kill()
@@ -119,7 +116,7 @@ func _die():
 		return
 
 	is_dead = true
-	#Not the player - PlayerMain handles its own removal
+	#PlayerMain handles its own removal
 	await get_tree().create_timer(1.0).timeout
 	if is_instance_valid(self) and not is_in_group("Player"):
 		queue_free()

@@ -5,7 +5,3 @@ class_name enemy_idle_state
 
 func Enter():
 	animator.play("Idle")
-	pass
-
-func Update(_delta):
-	pass

@@ -1,16 +1,10 @@
 extends Node2D
 class_name AttackAura
 
-#The swing aura on the player's melee attacks.
-#
-#Nothing here is keyframed. The aura reads the melee hitboxes themselves and draws the
-#area they cover, and it is on screen for exactly as long as the AnimationPlayer keeps
-#one of them enabled. So the glow a player reads their spacing off is the reach they
-#actually have, and retuning a shape in the inspector retunes the aura with it - there
-#is no second copy of the numbers to drift out of sync.
-#
-#This node sits under AnimatedSprite2D alongside the hitboxes, so the facing flip on the
-#sprite mirrors the aura and the hitbox together.
+#Draws the melee hitboxes themselves, for exactly as long as the AnimationPlayer keeps
+#one enabled - so the glow a player reads their spacing off is the reach they actually
+#have, with no second copy of the numbers to drift out of sync.
+#Sits under AnimatedSprite2D, so the facing flip mirrors aura and hitbox together.
 
 #In the same order as PlayerAttacking.attacks: punch first, then kick
 @export var shapes : Array[CollisionShape2D]
@@ -19,8 +13,7 @@ class_name AttackAura
 #Time to sweep out to full reach, and to fade once the hitbox closes again
 @export var grow_time : float = 0.07
 @export var fade_time : float = 0.16
-#A corpse keeps whichever hitbox the death animation interrupted - see
-#PlayerAttackState._on_hitbox_body_entered for the same guard on the damage side
+#A corpse keeps whichever hitbox the death animation interrupted
 @export var character : CharacterBase
 
 var _shape : CollisionShape2D
@@ -60,7 +53,6 @@ func _draw():
 	var shape = _shape.shape
 	if shape == null:
 		return
-	#Both nodes hang off the same mirrored parent, so this lands in the aura's own frame
 	var origin = to_local(_shape.global_position)
 	var tint = _tint_for(_shape)
 	if shape is CircleShape2D:
@@ -68,9 +60,8 @@ func _draw():
 	elif shape is RectangleShape2D:
 		_draw_slash(origin, (shape as RectangleShape2D).size, tint)
 
-#A leaf inscribed in the hitbox rectangle - widest across the middle, tapering to both
-#ends. Inscribed rather than circumscribed on purpose: the aura never promises reach the
-#box does not have.
+#A leaf inscribed in the hitbox rect - inscribed, not circumscribed, so the aura never
+#promises reach the box does not have
 func _draw_slash(origin : Vector2, size : Vector2, tint : Color):
 	var near = origin.x - size.x * 0.5
 	var far = near + size.x * _grow
@@ -79,7 +70,7 @@ func _draw_slash(origin : Vector2, size : Vector2, tint : Color):
 	var edge := PackedVector2Array()
 	for i in steps + 1:
 		var t = float(i) / float(steps)
-		#sin gives the leaf its belly; the exponent keeps the two tips from going spindly
+		#sin gives the belly; the exponent keeps the tips from going spindly
 		var spread = half * pow(sin(t * PI), 0.55)
 		edge.append(Vector2(lerpf(near, far, t), origin.y - spread))
 	for i in steps + 1:
@@ -91,8 +82,7 @@ func _draw_slash(origin : Vector2, size : Vector2, tint : Color):
 	edge.append(edge[0])
 	draw_polyline(edge, Color(tint.r, tint.g, tint.b, 0.8 * _alpha), 1.5, true)
 
-#The kick reaches the same distance every way, so its aura is the hitbox circle itself,
-#opening outwards.
+#The kick reaches the same distance every way, so its aura is the hitbox circle itself
 func _draw_ring(origin : Vector2, radius : float, tint : Color):
 	var r = radius * _grow
 	if r <= 0.5:

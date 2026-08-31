@@ -51,7 +51,7 @@ func cancel():
 	if parry_indicator:
 		parry_indicator.visible = false
 
-#FSM-state check guards against hitbox/animation desync
+#Guards against hitbox/animation desync
 func _on_hit_box_body_entered(body):
 	if body.is_in_group("Player") and enemy.fsm.current_state == self:
 		deal_damage_to_player(body)

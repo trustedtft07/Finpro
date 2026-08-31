@@ -1,6 +1,6 @@
 extends Node
 
-#Attached to the death/victory screens
+#The victory screen uses this directly; DeathScreen.gd extends it to respawn on a timer
 func _process(_delta):
 	if Input.is_action_just_pressed("Restart"):
 		restart()

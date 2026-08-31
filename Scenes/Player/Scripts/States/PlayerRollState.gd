@@ -1,21 +1,12 @@
 extends State
 class_name PlayerRolling
 
-#The dodge roll.
-#
-#It used to be part of the walk state: a "dashspeed" that decayed on top of the normal
-#walk velocity. That version could not be started from a standstill, cancelled itself
-#the instant the movement key was released or nudged sideways, and had no fixed length -
-#so the i-frames and the distance covered never lined up the same way twice.
-#
-#Here the roll is committed the frame it starts. Direction, distance and i-frames are
-#all fixed in Enter() and nothing during the roll can shorten them, which is what makes
-#it something a player can learn to time against an incoming swing.
+#Direction, distance and i-frames are all fixed in Enter() and nothing during the roll
+#can shorten them - that is what makes it something a player can time against a swing.
 
 @export var roll_speed : float = 700.0
 @export var roll_duration : float = 0.34
-#Measured from the start of the roll, and deliberately shorter than it: the tail is a
-#real recovery window an enemy can punish
+#Shorter than the roll on purpose: the tail is a recovery window an enemy can punish
 @export var iframe_duration : float = 0.24
 @export var stamina_cost : float = 22.0
 #Fraction of the roll held at full speed before it eases out
@@ -29,8 +20,7 @@ var _elapsed : float = 0.0
 var _rolling : bool = false
 
 func Enter():
-	#Claimed here rather than by whichever state sent us, so a roll that can't start
-	#doesn't leave the press in the buffer to fire again next frame
+	#Claimed here so a roll that can't start doesn't leave the press to fire next frame
 	player.claim_input(["Dash"])
 	_rolling = false
 
@@ -39,7 +29,6 @@ func Enter():
 		call_deferred("_abort_to_idle")
 		return
 
-	#Roll where the player is steering, or straight ahead from a standstill
 	var input_dir = Input.get_vector("MoveLeft", "MoveRight", "MoveUp", "MoveDown")
 	_direction = input_dir.normalized() if input_dir != Vector2.ZERO else player.facing_direction
 	player.set_facing_direction(_direction)
@@ -64,7 +53,6 @@ func Update(delta : float):
 	if(_elapsed >= iframe_duration):
 		player.dodge_invincible = false
 
-	#CharacterBase drives the body itself while knockback is active
 	if(!player.is_knockbacked):
 		player.velocity = _direction * roll_speed * _speed_curve()
 		player.move_and_slide()
@@ -74,8 +62,8 @@ func Update(delta : float):
 
 	_finish()
 
-#Rolling into the next action is the whole point of the move, so the buffer is read the
-#instant the roll is over instead of after a detour through Idle
+#Rolling into the next action is the point of the move, so the buffer is read the
+#instant the roll ends instead of after a detour through Idle
 func _finish():
 	_rolling = false
 
@@ -90,8 +78,7 @@ func _finish():
 	else:
 		state_transition.emit(self, "Idle")
 
-#Full speed for the first stretch, then eased down so the roll settles into a step
-#instead of stopping dead against nothing
+#Full speed, then eased down so the roll settles into a step instead of stopping dead
 func _speed_curve() -> float:
 	var t = _elapsed / roll_duration
 	if(t <= speed_hold):

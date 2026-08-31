@@ -1,36 +1,25 @@
 extends State
 class_name PlayerAttacking
 
-#Melee. Two things in here decide how the combat reads:
-#
-#  - the swing runs off a timer measured against the animation's own length instead of
-#    awaiting animation_finished. An await cannot be cancelled, so a swing that got cut
-#    short left a coroutine alive that woke up inside whatever state came next and
-#    dragged it back to Idle;
-#  - from cancel_time onwards the next buffered press is honoured straight away. That is
-#    the combo feel: three hits read as one chain instead of three separate swings each
-#    waiting out its own recovery.
+#The swing runs off a timer against the animation's length rather than awaiting
+#animation_finished: an await cannot be cancelled, so a swing cut short left a coroutine
+#alive that woke up inside the next state and dragged it back to Idle.
 
-#How long after a swing a follow-up still counts as part of the same chain
 @export var combo_window : float = 0.7
 
-#Per combo stage: 0=first hit, last=finisher
 const COMBO_DAMAGE_MULT : Array[float] = [1.0, 1.15, 1.5]
 const COMBO_KNOCKBACK_MULT : Array[float] = [1.0, 1.2, 2.0]
 const COMBO_LABEL : Array[String] = ["COMBO 1", "COMBO 2", "FINISHER!"]
 const COMBO_COLOR : Array[Color] = [Color(1, 1, 1), Color(1, 0.85, 0.35), Color(1, 0.45, 0.2)]
 const MAX_COMBO_STAGE := 2
 
-#Shows which combo stage just landed - the multipliers above are invisible without it
 @export var combo_text : Label
-
 @export var animator : AnimationPlayer
 var current_attack : Attack_Data
 @export var attacks : Array[Attack_Data]
 
-#Both melee hitboxes. Cleared on the way out because the animation tracks that re-disable
-#them only fire if the animation is allowed to run to its end - cancelling into another
-#move, or dying mid-swing, skips them and would leave a live hitbox attached.
+#Cleared on the way out: the animation tracks that re-disable them only run if the
+#animation reaches its end, and cancelling or dying mid-swing skips them
 @export var hitboxes : Array[CollisionShape2D]
 
 var combo_stage : int = 0
@@ -49,7 +38,6 @@ func Enter():
 	_swinging = false
 	current_attack = _attack_for(player.claim_input(["Punch", "Kick"]))
 
-	#Only reachable if something enters this state without a fresh Punch/Kick press
 	if(!current_attack):
 		call_deferred("_abort_to_idle")
 		return
@@ -62,8 +50,7 @@ func Enter():
 	if Time.get_ticks_msec() - _last_hit_ms > combo_window * 1000:
 		combo_stage = 0
 
-	#Swings land where the player is steering, not where the last step happened to leave
-	#the character pointing
+	#Swings land where the player is steering, not where the last step left them facing
 	var input_dir = Input.get_vector("MoveLeft", "MoveRight", "MoveUp", "MoveDown")
 	if(input_dir != Vector2.ZERO):
 		player.set_facing_direction(input_dir)
@@ -92,8 +79,7 @@ func Update(delta : float):
 	if(_elapsed < current_attack.cancel_time):
 		return
 
-	#Chaining, rolling or parrying out of the recovery all beat standing there watching
-	#the swing play itself out
+	#Chaining, rolling or parrying out of the recovery all beat waiting the swing out
 	if player.peek_input(["Punch", "Kick"]):
 		_close_swing()
 		state_transition.emit(self, "Attacking")
@@ -118,14 +104,14 @@ func Update(delta : float):
 	var moving = Input.get_vector("MoveLeft", "MoveRight", "MoveUp", "MoveDown") != Vector2.ZERO
 	state_transition.emit(self, "Moving" if moving else "Idle")
 
-#A swing counts as spent once it is over or cancelled out of, whether or not it connected
+#A swing counts as spent once it is over or cancelled out of, hit or miss
 func _close_swing():
 	_swinging = false
 	_last_hit_ms = Time.get_ticks_msec()
 	combo_stage = 0 if combo_stage >= MAX_COMBO_STAGE else combo_stage + 1
 
-#A short shove behind the swing. Small on purpose: enough to give the hit weight and
-#close the last few pixels of a whiff, not enough to be a movement option.
+#Enough to give the hit weight and close the last few pixels, not enough to be a
+#movement option
 func _step_lunge(delta : float):
 	if(_lunge <= 0.0 or player.is_knockbacked):
 		return
@@ -156,10 +142,8 @@ func _disable_hitboxes():
 func _abort_to_idle():
 	state_transition.emit(self, "Idle")
 
-#Hitbox toggled by the animation player, both hitboxes route here via signals.
-#FSM-state check guards against hitbox/animation desync: dying mid-swing replaces the
-#animation, so the track that re-disables the hitbox never runs and the corpse would
-#keep dealing damage.
+#Both hitboxes route here. The state check guards against hitbox/animation desync: dying
+#mid-swing replaces the animation, so the track that re-disables the hitbox never runs.
 func _on_hitbox_body_entered(body):
 	if body.is_in_group("Enemy") and fsm.current_state == self and _swinging:
 		deal_damage(body)

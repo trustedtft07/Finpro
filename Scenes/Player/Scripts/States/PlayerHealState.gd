@@ -3,7 +3,6 @@ class_name PlayerHealing
 
 @onready var sprite : AnimatedSprite2D = $"../../AnimatedSprite2D"
 
-#Rises for the whole channel
 @export var heal_particles : GPUParticles2D
 #One-shot pop when the heal lands
 @export var heal_burst : GPUParticles2D
@@ -13,8 +12,7 @@ var interrupted := false
 var _glow_tween : Tween
 
 func Enter():
-	#Claimed here rather than by whichever state sent us, so a heal that can't start
-	#doesn't leave the press in the buffer to fire again next frame
+	#Claimed here so a heal that can't start doesn't leave the press to fire next frame
 	player.claim_input(["Heal"])
 
 	#call_deferred: see PlayerAttackState's stamina bail-out for why
@@ -47,14 +45,12 @@ func Enter():
 func _abort_to_idle():
 	state_transition.emit(self, "Idle")
 
-#Called by PlayerMain on a landed hit
 func interrupt():
 	interrupted = true
 	_stop_glow_pulse()
 	if(heal_particles):
 		heal_particles.emitting = false
 
-#Breathing pulse instead of one flash
 func _start_glow_pulse(total_duration : float):
 	var pulse_time = 0.3
 	var loops = max(int(total_duration / (pulse_time * 2.0)), 1)

@@ -1,4 +1,9 @@
-"""Write the Green Forest TileSet resource and scene."""
+"""Write the Green Forest TileSet resource and scene.
+
+NOTE: the shipped scene's props are TileMapLayer tiles, not the Sprite2D nodes this
+writes - see "Props: tiles and collision" in README.md. Re-exporting replaces them
+with sprites again; the conversion has to be re-applied after.
+"""
 import base64
 import random
 import struct

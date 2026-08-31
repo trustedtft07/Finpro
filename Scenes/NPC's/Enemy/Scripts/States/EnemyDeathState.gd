@@ -4,4 +4,3 @@ extends State
 
 func Enter():
 	animator.play("Death")
-	pass

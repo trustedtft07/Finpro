@@ -16,10 +16,9 @@ func finished_attacking():
 		fsm.change_state(attack_node, "enemy_idle_state")
 
 #region Attack pacing
-#Prevents an instant re-attack right after a parry
+#Stops an instant re-attack right after a parry
 @export var parry_stagger_duration : float = 0.6
-#And a shorter breath after a swing of its own. Without it the enemy re-opens the moment
-#the last frame plays, so there is never a gap to step into and answer.
+#A breath after its own swing, or there is never a gap to step into and answer
 @export var attack_cooldown : float = 0.45
 var _stagger_timer : float = 0.0
 var _cooldown_timer : float = 0.0
@@ -30,7 +29,6 @@ func is_staggered() -> bool:
 func can_attack() -> bool:
 	return _stagger_timer <= 0.0 and _cooldown_timer <= 0.0
 
-#Physics frame: EnemyChaseState reads can_attack() from Update()
 func _physics_process(delta):
 	super(delta)
 	if(_stagger_timer > 0.0):
@@ -39,7 +37,6 @@ func _physics_process(delta):
 		_cooldown_timer -= delta
 #endregion
 
-#On parry: stop the hitbox, stagger, then finish normally
 func interrupt_attack():
 	if attack_node.has_method("cancel"):
 		attack_node.cancel()

@@ -1,6 +1,22 @@
-[gd_resource type="SpriteFrames" format=3]
+[gd_resource type="SpriteFrames" format=3 uid="uid://vjthckkm6rp5"]
 
-[ext_resource type="Texture2D" path="res://Art/Boss/BossEffects.png" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://ddi06qltffroc" path="res://Art/Boss/BossEffects.png" id="1_tex"]
+
+[sub_resource type="AtlasTexture" id="A10"]
+atlas = ExtResource("1_tex")
+region = Rect2(96, 128, 48, 64)
+
+[sub_resource type="AtlasTexture" id="A11"]
+atlas = ExtResource("1_tex")
+region = Rect2(96, 64, 48, 64)
+
+[sub_resource type="AtlasTexture" id="A12"]
+atlas = ExtResource("1_tex")
+region = Rect2(144, 64, 48, 64)
+
+[sub_resource type="AtlasTexture" id="A13"]
+atlas = ExtResource("1_tex")
+region = Rect2(192, 64, 48, 64)
 
 [sub_resource type="AtlasTexture" id="A0"]
 atlas = ExtResource("1_tex")
@@ -13,6 +29,10 @@ region = Rect2(48, 0, 48, 64)
 [sub_resource type="AtlasTexture" id="A2"]
 atlas = ExtResource("1_tex")
 region = Rect2(96, 0, 48, 64)
+
+[sub_resource type="AtlasTexture" id="A14"]
+atlas = ExtResource("1_tex")
+region = Rect2(144, 128, 48, 64)
 
 [sub_resource type="AtlasTexture" id="A3"]
 atlas = ExtResource("1_tex")
@@ -42,28 +62,25 @@ region = Rect2(0, 128, 48, 64)
 atlas = ExtResource("1_tex")
 region = Rect2(48, 128, 48, 64)
 
-[sub_resource type="AtlasTexture" id="A10"]
-atlas = ExtResource("1_tex")
-region = Rect2(96, 128, 48, 64)
-
-[sub_resource type="AtlasTexture" id="A11"]
-atlas = ExtResource("1_tex")
-region = Rect2(96, 64, 48, 64)
-
-[sub_resource type="AtlasTexture" id="A12"]
-atlas = ExtResource("1_tex")
-region = Rect2(144, 64, 48, 64)
-
-[sub_resource type="AtlasTexture" id="A13"]
-atlas = ExtResource("1_tex")
-region = Rect2(192, 64, 48, 64)
-
-[sub_resource type="AtlasTexture" id="A14"]
-atlas = ExtResource("1_tex")
-region = Rect2(144, 128, 48, 64)
-
 [resource]
 animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("A10")
+}, {
+"duration": 1.0,
+"texture": SubResource("A11")
+}, {
+"duration": 1.0,
+"texture": SubResource("A12")
+}, {
+"duration": 1.0,
+"texture": SubResource("A13")
+}],
+"loop": false,
+"name": &"impact",
+"speed": 16.0
+}, {
 "frames": [{
 "duration": 1.0,
 "texture": SubResource("A0")
@@ -77,6 +94,14 @@ animations = [{
 "loop": false,
 "name": &"lightning",
 "speed": 11.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("A14")
+}],
+"loop": true,
+"name": &"orb",
+"speed": 6.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -108,29 +133,4 @@ animations = [{
 "loop": true,
 "name": &"star",
 "speed": 14.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("A10")
-}, {
-"duration": 1.0,
-"texture": SubResource("A11")
-}, {
-"duration": 1.0,
-"texture": SubResource("A12")
-}, {
-"duration": 1.0,
-"texture": SubResource("A13")
-}],
-"loop": false,
-"name": &"impact",
-"speed": 16.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("A14")
-}],
-"loop": true,
-"name": &"orb",
-"speed": 6.0
 }]

@@ -26,8 +26,7 @@ var _attacker : EnemyMain
 @onready var player : PlayerMain = $"../.."
 
 func Enter():
-	#Claimed here rather than by whichever state sent us, so a parry that can't start
-	#doesn't leave the press in the buffer to fire again next frame
+	#Claimed here so a parry that can't start doesn't leave the press to fire next frame
 	player.claim_input(["Parry"])
 	_active = false
 
@@ -58,8 +57,7 @@ func Update(delta : float):
 	if(!_active):
 		return
 
-	#Rolling out of a whiffed parry is the escape the endlag exists to make you earn -
-	#it costs the roll's own stamina on top of the parry's
+	#Rolling out of a whiffed parry costs the roll's own stamina on top of the parry's
 	if(phase == Phase.RECOVER and player.peek_input(["Dash"])):
 		state_transition.emit(self, "Rolling")
 		return
@@ -107,7 +105,6 @@ func _update_shield(new_phase : Phase, duration : float):
 			tween.tween_property(shield, "line_color", Color(0.4, 0.4, 0.45, 0.0), duration * 0.6)
 			tween.tween_callback(func(): shield.visible = false)
 
-#Fires from PlayerMain.try_parry the instant a hit lands during the active window
 func _on_parried(attacker : EnemyMain):
 	if(phase != Phase.ACTIVE):
 		return
@@ -130,8 +127,7 @@ func _play_success():
 	tween.tween_property(player.sprite, "modulate", Color.WHITE, 0.16)
 	await tween.finished
 
-	#A landed parry is meant to open a punish, so a swing queued during the freeze-frame
-	#comes straight out instead of being thrown away
+	#A landed parry opens a punish, so a swing queued during the freeze-frame comes out
 	if player.peek_input(["Punch", "Kick"]):
 		state_transition.emit(self, "Attacking")
 		return

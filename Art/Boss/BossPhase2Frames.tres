@@ -1,22 +1,6 @@
-[gd_resource type="SpriteFrames" format=3]
+[gd_resource type="SpriteFrames" format=3 uid="uid://dxr4ea4k85ase"]
 
 [ext_resource type="Texture2D" uid="uid://csa3oak3i0rbx" path="res://Art/Boss/Phase2/Crystal Knight.png" id="1_tex"]
-
-[sub_resource type="AtlasTexture" id="A0"]
-atlas = ExtResource("1_tex")
-region = Rect2(14, 7, 64, 64)
-
-[sub_resource type="AtlasTexture" id="A1"]
-atlas = ExtResource("1_tex")
-region = Rect2(78, 7, 64, 64)
-
-[sub_resource type="AtlasTexture" id="A2"]
-atlas = ExtResource("1_tex")
-region = Rect2(142, 7, 64, 64)
-
-[sub_resource type="AtlasTexture" id="A3"]
-atlas = ExtResource("1_tex")
-region = Rect2(206, 7, 64, 64)
 
 [sub_resource type="AtlasTexture" id="A4"]
 atlas = ExtResource("1_tex")
@@ -70,18 +54,6 @@ region = Rect2(94, 567, 64, 64)
 atlas = ExtResource("1_tex")
 region = Rect2(206, 566, 64, 64)
 
-[sub_resource type="AtlasTexture" id="A17"]
-atlas = ExtResource("1_tex")
-region = Rect2(206, 566, 64, 64)
-
-[sub_resource type="AtlasTexture" id="A18"]
-atlas = ExtResource("1_tex")
-region = Rect2(94, 567, 64, 64)
-
-[sub_resource type="AtlasTexture" id="A19"]
-atlas = ExtResource("1_tex")
-region = Rect2(14, 567, 64, 64)
-
 [sub_resource type="AtlasTexture" id="A20"]
 atlas = ExtResource("1_tex")
 region = Rect2(14, 567, 64, 64)
@@ -94,25 +66,36 @@ region = Rect2(94, 567, 64, 64)
 atlas = ExtResource("1_tex")
 region = Rect2(206, 566, 64, 64)
 
+[sub_resource type="AtlasTexture" id="A0"]
+atlas = ExtResource("1_tex")
+region = Rect2(14, 7, 64, 64)
+
+[sub_resource type="AtlasTexture" id="A1"]
+atlas = ExtResource("1_tex")
+region = Rect2(78, 7, 64, 64)
+
+[sub_resource type="AtlasTexture" id="A2"]
+atlas = ExtResource("1_tex")
+region = Rect2(142, 7, 64, 64)
+
+[sub_resource type="AtlasTexture" id="A3"]
+atlas = ExtResource("1_tex")
+region = Rect2(206, 7, 64, 64)
+
+[sub_resource type="AtlasTexture" id="A17"]
+atlas = ExtResource("1_tex")
+region = Rect2(206, 566, 64, 64)
+
+[sub_resource type="AtlasTexture" id="A18"]
+atlas = ExtResource("1_tex")
+region = Rect2(94, 567, 64, 64)
+
+[sub_resource type="AtlasTexture" id="A19"]
+atlas = ExtResource("1_tex")
+region = Rect2(14, 567, 64, 64)
+
 [resource]
 animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("A0")
-}, {
-"duration": 1.0,
-"texture": SubResource("A1")
-}, {
-"duration": 1.0,
-"texture": SubResource("A2")
-}, {
-"duration": 1.0,
-"texture": SubResource("A3")
-}],
-"loop": true,
-"name": &"idle",
-"speed": 6.0
-}, {
 "frames": [{
 "duration": 1.0,
 "texture": SubResource("A4")
@@ -169,20 +152,6 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": SubResource("A17")
-}, {
-"duration": 1.0,
-"texture": SubResource("A18")
-}, {
-"duration": 1.0,
-"texture": SubResource("A19")
-}],
-"loop": false,
-"name": &"spawn",
-"speed": 4.0
-}, {
-"frames": [{
-"duration": 1.0,
 "texture": SubResource("A20")
 }, {
 "duration": 1.0,
@@ -194,4 +163,35 @@ animations = [{
 "loop": false,
 "name": &"death",
 "speed": 3.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("A0")
+}, {
+"duration": 1.0,
+"texture": SubResource("A1")
+}, {
+"duration": 1.0,
+"texture": SubResource("A2")
+}, {
+"duration": 1.0,
+"texture": SubResource("A3")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("A17")
+}, {
+"duration": 1.0,
+"texture": SubResource("A18")
+}, {
+"duration": 1.0,
+"texture": SubResource("A19")
+}],
+"loop": false,
+"name": &"spawn",
+"speed": 4.0
 }]

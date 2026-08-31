@@ -1,4 +1,9 @@
-"""Write the UndeadForest Godot scene."""
+"""Write the UndeadForest Godot scene.
+
+NOTE: the shipped scene's props are TileMapLayer tiles, not the Sprite2D nodes this
+writes - see "Props: tiles and collision" in README.md. Re-exporting replaces them
+with sprites again; the conversion has to be re-applied after.
+"""
 import random
 
 from undead_gen import MAP_W, MAP_H, GR, WC, WD, OB, DT

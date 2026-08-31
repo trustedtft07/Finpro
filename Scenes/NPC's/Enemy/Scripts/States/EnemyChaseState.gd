@@ -11,7 +11,6 @@ func Enter():
 	animator.play("Chasing")
 
 func Update(_delta):
-	#Don't fight active knockback
 	if body.is_knockbacked:
 		return
 
@@ -20,8 +19,7 @@ func Update(_delta):
 		state_transition.emit(self, "enemy_idle_state")
 		return
 
-	#global_position: local position only happens to match while both sit under a
-	#plain (transformless) parent
+	#global, not local: local only happens to match under a transformless parent
 	var chase_direction = player.global_position - body.global_position as Vector2
 
 	body.velocity = chase_direction.normalized() * move_speed

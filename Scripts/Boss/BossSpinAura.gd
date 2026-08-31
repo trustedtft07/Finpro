@@ -1,16 +1,10 @@
 extends Node2D
 class_name BossSpinAura
 
-#The whirl drawn by the boss's third phase 1 attack.
-#
-#Nothing in here is keyframed. BossMain hands it the same radius and sweep angle its
-#hitbox is using that frame, so the crescent the player reads the danger off is exactly
-#the shape that hits them - the same contract AttackAura keeps on the player's side, and
-#the reason the move can be dodged on sight rather than by memorising it.
-#
-#The windup draws the storm's ground-marker language on purpose: a pool that fills and a
-#ring closing inwards, so a player who has already learned to read BossLightning reads
-#this the same way.
+#The whirl drawn by the boss's spin. BossMain hands it the same radius and sweep angle
+#its hitbox is using that frame, so what the player reads the danger off is exactly the
+#shape that hits them - the same contract AttackAura keeps on the player's side.
+#The windup borrows BossLightning's ground-marker language so it reads the same way.
 
 @export var ring_color : Color = Color(1.0, 0.33, 0.36)
 @export var edge_color : Color = Color(1.0, 0.66, 0.5)
@@ -27,8 +21,7 @@ var sweeping : bool = false
 
 func _ready():
 	visible = false
-	#The whirl is on the ground, so it belongs under the boss that is drawing it
-	z_index = -1
+	z_index = -1        # on the ground, under the boss drawing it
 
 #Called once as the move starts, with the numbers the hitbox will use
 func begin(hit_radius : float, hit_arc : float, aim : float):
@@ -60,13 +53,13 @@ func _draw():
 	if radius <= 0.0:
 		return
 
-	#The reach, always drawn: standing outside this circle is the whole answer to the move
+	#The reach - standing outside it is the whole answer to the move
 	draw_circle(Vector2.ZERO, radius, Color(ring_color.r, ring_color.g, ring_color.b, 0.11 * charge))
 	draw_arc(Vector2.ZERO, radius, 0.0, TAU, 48,
 			Color(ring_color.r, ring_color.g, ring_color.b, 0.28 + 0.5 * charge), 2.0, true)
 
 	if not sweeping:
-		#A ring closing on the boss while it winds up, so the pause reads as a threat
+		#A ring closing in while it winds up, so the pause reads as a threat
 		draw_arc(Vector2.ZERO, maxf(radius * (1.0 - charge), 1.0), 0.0, TAU, 40,
 				Color(edge_color.r, edge_color.g, edge_color.b, 0.55 + 0.4 * charge), 3.0, true)
 		return
@@ -74,8 +67,7 @@ func _draw():
 	_draw_trail()
 	_draw_wedge()
 
-#Where the sweep has just been. Fades quadratically so the leading edge stays the
-#brightest thing on screen - that edge is the part that is about to hit.
+#Fades quadratically so the leading edge - the part about to hit - stays brightest
 func _draw_trail():
 	var half = deg_to_rad(arc)
 	var span = deg_to_rad(trail_span)
@@ -87,7 +79,7 @@ func _draw_trail():
 		draw_arc(Vector2.ZERO, radius * 0.93, from, to, 8,
 				Color(edge_color.r, edge_color.g, edge_color.b, 0.5 * fade * fade), 5.0, true)
 
-#The wedge itself - the exact shape BossMain._hit_player_wedge() is testing
+#The exact shape BossMain._hit_player_wedge() is testing
 func _draw_wedge():
 	var half = deg_to_rad(arc)
 	var segments := 14
