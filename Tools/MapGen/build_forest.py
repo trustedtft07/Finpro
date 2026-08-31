@@ -314,12 +314,11 @@ def place_decor(m, layers, rng, spawn_clear):
         occ |= cells
         n_small += 1
 
-    # tree trunks block movement
-    for sp in sprites:
-        if sp['s']['ph'] < 60:
-            continue
-        cx = sp['x'] + sp['tw'] // 2
-        layers['collision'][(cx, sp['y'] + sp['th'] - 1)] = G.COLLIDER
+    # Tree trunks used to block movement with one COLLIDER cell each, anchored to the
+    # sprite's bottom tile. The shipped scene carries its props as tiles instead, whose
+    # cell sits mid-canopy, so those colliders ended up ~40px above the trunks - an
+    # invisible wall in open grass, with the trunk itself walkable. Trunk collision now
+    # comes from the tileset (prop_collision.py), so nothing is emitted here.
 
     print('props: trees=%d shrubs=%d small=%d' % (n_tree, n_shrub, n_small))
     return sprites

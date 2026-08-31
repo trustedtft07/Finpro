@@ -10,26 +10,18 @@ const DEATH_SCREEN = preload("res://Scenes/Misc/DeathScreen.tscn")
 const PROJECTILE = preload("res://Scenes/Interactables/Projectile.tscn")
 
 #region Input buffer
-#A press that arrives while the character is committed to something - mid swing, mid
-#roll, mid heal - used to be dropped outright: every state read Input directly, so an
-#action only counted on the exact frame its state happened to be listening. That is what
-#made the combat feel like it was ignoring inputs.
-#
-#Presses are recorded here instead and stay claimable for input_buffer_window, so a
-#swing queued a little early still comes out the moment the character is free.
-#
-#The window has to outlast the recovery it is meant to carry a press through, or it
-#expires before the state it was queued for will accept it: the punch is a 0.45s
-#animation that opens its cancel window at 0.30s, so anything under that just drops the
-#input again in a less obvious way.
+#A press made while the character is committed to something is remembered instead of
+#dropped, so a swing queued mid-roll or mid-swing still comes out. The window has to
+#outlast the recovery it carries a press through - the punch opens its cancel window at
+#0.30s, so anything shorter silently drops the input again.
 const BUFFERED_ACTIONS : Array[String] = ["Punch", "Kick", "Dash", "Parry", "Heal", "RangedAttack"]
 @export var input_buffer_window : float = 0.3
 
 var _buffered : String = ""
 var _buffer_timer : float = 0.0
 
-#Only the newest press is kept. Stacking them makes the character play out a queue the
-#player has already stopped meaning by the time it comes round.
+#Only the newest press is kept - a queue makes the character play out inputs the player
+#has already stopped meaning
 func _read_input_buffer(delta : float):
 	if(_buffer_timer > 0.0):
 		_buffer_timer -= delta
@@ -41,8 +33,8 @@ func _read_input_buffer(delta : float):
 			_buffered = action
 			_buffer_timer = input_buffer_window
 
-#States peek to decide a transition and the state being handed to claims the press, so
-#it survives the change_state() in between instead of being spent twice or not at all
+#States peek to decide a transition and the state handed to claims the press, so it
+#survives the change_state() in between
 func peek_input(actions : Array) -> bool:
 	return _buffered != "" and actions.has(_buffered)
 
@@ -58,7 +50,6 @@ func clear_input_buffer():
 	_buffered = ""
 	_buffer_timer = 0.0
 
-#Idle and Moving are the two states that leave the character free to act
 func is_free_to_act() -> bool:
 	if(fsm == null or fsm.current_state == null):
 		return false
@@ -67,7 +58,7 @@ func is_free_to_act() -> bool:
 #endregion
 
 #region Healing (Gourd)
-#Getting hit while channeling interrupts the heal - charge still spent
+#Getting hit while channeling interrupts the heal - the charge is still spent
 @export var max_heal_charges : int = 3
 @export var heal_amount : int = 80
 @export var heal_channel_time : float = 0.9
@@ -106,6 +97,34 @@ var facing_direction : Vector2 = Vector2.DOWN
 func set_facing_direction(dir : Vector2):
 	if(dir != Vector2.ZERO):
 		facing_direction = dir.normalized()
+
+#region Wading through foliage
+#Bushes carry a polygon on physics layer 8 ("Foliage"), which no body masks - they never
+#block, they are only there to be read, and pushing through one costs speed the way
+#branches would. The roll is deliberately left at full speed: a dodge that scenery can
+#slow is a dodge the player cannot rely on.
+#
+#Asked as a shape query rather than through an Area2D on purpose - an Area2D reports no
+#overlap at all against TileMapLayer's own static bodies here, and a query also answers
+#on the frame it is asked instead of one frame late.
+const FOLIAGE_MASK := 128
+@export var bush_slow : float = 0.4
+@onready var _body_shape : CollisionShape2D = $BodyCollisionShape
+var _bush_query : PhysicsShapeQueryParameters2D
+
+func is_in_bush() -> bool:
+	if(_body_shape == null or _body_shape.shape == null):
+		return false
+	if(_bush_query == null):
+		_bush_query = PhysicsShapeQueryParameters2D.new()
+		_bush_query.shape = _body_shape.shape
+		_bush_query.collision_mask = FOLIAGE_MASK
+	_bush_query.transform = Transform2D(0.0, _body_shape.global_position)
+	return not get_world_2d().direct_space_state.intersect_shape(_bush_query, 1).is_empty()
+
+func move_speed_scale() -> float:
+	return 1.0 - bush_slow if is_in_bush() else 1.0
+#endregion
 
 func try_fire_projectile():
 	if(!has_mana(projectile_mana_cost)):
@@ -151,7 +170,7 @@ func _update_staminabar():
 #endregion
 
 #region Mana
-#Doesn't regenerate on its own - only bonfire rest or a kill restores it
+#Only a bonfire rest or a kill restores it
 @export var max_mana : float = 100.0
 @export var mana_kill_restore : float = 5.0
 var mana : float = 100.0
@@ -169,7 +188,6 @@ func restore_mana(amount : float):
 	mana = clampf(mana + amount, 0, max_mana)
 	_update_manabar()
 
-#Used by PlayerAttackState and Projectile on a kill
 func restore_mana_on_kill():
 	restore_mana(mana_kill_restore)
 
@@ -178,7 +196,6 @@ func _update_manabar():
 #endregion
 
 #region Parry
-#True only during the parry active window; checked by EnemyAttackState
 signal parried(attacker)
 var parry_active : bool = false
 
@@ -211,28 +228,24 @@ func _ready():
 	manabar.max_value = max_mana
 	manabar.value = mana
 
-	#Spawn at the last bonfire if we're in that scene
 	if GameManager.has_checkpoint and get_tree().current_scene.scene_file_path == GameManager.checkpoint_scene:
 		global_position = GameManager.checkpoint_position
 
-#Only interrupt on hits that actually land, not ones blocked by an i-frame
+#Only hits that actually land interrupt a heal, not ones an i-frame blocked
 func _take_damage(amount):
-	#Debug god mode ('\'): no damage, and no heal interrupt either
 	if GameManager.god_mode:
 		return
 	if(fsm.current_state.name == "Healing" && !invincible && !dodge_invincible):
 		fsm.current_state.interrupt()
 	super._take_damage(amount)
 
-#Being shoved around by attacks that deal no damage just gets in the way while debugging
 func apply_knockback(direction : Vector2, force : float, duration : float = 0.15):
 	if GameManager.god_mode:
 		return
 	super.apply_knockback(direction, force, duration)
 
-#The base class turns on velocity.x, which flips the character to face wherever a
-#knockback happened to shove them and leaves a swing pointing the wrong way. Facing is
-#driven by intent here instead - the melee hitboxes hang off the sprite, so they follow.
+#Turning on intent rather than the base class's velocity.x, which would flip the
+#character to face wherever a knockback shoved them and leave a swing pointing wrong
 func Turn():
 	var direction = -1 if flipped_horizontal == true else 1
 
@@ -248,15 +261,13 @@ func _process(delta):
 	aim_indicator.rotation = facing_direction.angle()
 	aim_indicator.visible = !is_dead
 
-#Resources and action input share the physics frame with the state machine, so a press
-#can't be consumed on a render frame the states never see. This node is the state
-#machine's parent, so the buffer is always filled before any state reads it.
+#This node is the state machine's parent, so the buffer is always filled before any
+#state reads it
 func _physics_process(delta):
 	super(delta)
 	_read_input_buffer(delta)
 	_regen_stamina(delta)
 
-	#Nothing else wants this action, so it is spent here rather than in a state
 	if(is_free_to_act() and claim_input(["RangedAttack"]) != ""):
 		try_fire_projectile()
 

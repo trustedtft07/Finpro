@@ -13,6 +13,9 @@ Both need Python 3 with Pillow and numpy, and both write into `out/`; copy the t
 files from there over the ones in `Scenes/Levels/` and the art folder. Each map is
 deterministic - same seed in, same map out.
 
+Prop collision is authored separately by `prop_collision.py`, off the art rather than the
+layout, and applies to both levels - see "Where a prop's collision actually goes" below.
+
 ## Undead Forest
 
 Learns its tile vocabulary from the asset pack's own sample map
@@ -69,6 +72,137 @@ python run_forest.py      # build + export + fprev.png
 The rock collision outlines in `export_forest.py` are copied verbatim from the
 hand-authored `Art/Forest/ForestTileSet.tres`, so the walls feel exactly as they
 were tuned there.
+
+## Props: tiles and collision
+
+The two forest scenes carry their props as one **`Props` TileMapLayer** each, not as
+Sprite2D nodes - collision comes from the tileset's physics layer, and GreenForest drops
+from 1176 nodes to 46, UndeadForest from 527 to 98. Four details make that exact:
+
+- **A 1px atlas grid.** Neither sheet is laid out on the 16px grid (Decorations.png packs
+  its trees tightly, straddling cell boundaries), so the prop atlas source uses
+  `texture_region_size = Vector2i(1, 1)` and `size_in_atlas` in pixels. Any region is then
+  addressable without repacking the art.
+- **Even-sized regions.** Godot rounds a Sprite2D's half-size to whole pixels but leaves a
+  tile's on the half; an odd-sized region rasterises visibly squashed. Odd regions are
+  grown one pixel into their own transparent margin first.
+- **`texture_origin` places the art, `y_sort_origin` sorts it.** A multi-cell tile is drawn
+  centred on its map cell, so `texture_origin = cell centre - where the sprite drew it`.
+  Sorting is lifted by `SORT_LIFT` (16px): the player's origin sits at the centre of its
+  32x32 sprite, 16px above its feet, while props are anchored at their base - without the
+  lift the player is drawn behind a prop it has already walked past.
+- **A flipped alternative per kind.** A flipped tile mirrors about the *map cell's* centre,
+  which negates `texture_origin.x` - so alternative 1 of every kind carries flip-corrected
+  geometry, and flipped props are placed with `alternative = FLIP_H | 1`.
+
+UndeadForest's 46 animated props stay as `AnimatedSprite2D` under `PropsAnimated`: tileset
+tile animation runs off a single clock, which would drop their randomised per-prop phase
+and make every instance of a kind pulse in lockstep.
+
+The conversion was verified by rendering the committed Sprite2D scenes against the tile
+scenes - both levels come out **pixel-identical**.
+
+### Where a prop's collision actually goes
+
+`prop_collision.py` authors every prop polygon from the art itself, because writing them
+by hand gets the frame wrong in two ways that are invisible until you play the level.
+Both rules below were **measured against Godot 4.6**, not assumed - a probe placed each
+tile, rendered it, and read the shapes back out of the physics server.
+
+- **A polygon is in cell-local space, and the art is not centred on the cell.** The drawn
+  region's top-left sits at `cell centre - size/2 - texture_origin`, so a 98px-tall tree
+  with `texture_origin = (0, 0)` has its *roots 48px below the cell*. Polygons authored
+  around the cell (`-16, 0 .. 16, 16` - what every prop shipped with) therefore floated in
+  mid-canopy: the player walked through every trunk and was stopped by empty air above it.
+- **`FLIP_H` mirrors the stored polygon about x = 0, and negates `texture_origin.x`.** So
+  the flipped art's region starts at `-size/2 + texture_origin.x`, and alternative 1 has to
+  store the polygon it wants *pre-mirrored*. Storing an already-mirrored polygon there - the
+  obvious thing to do, and what the tilesets shipped with - mirrors it twice, putting the
+  collision of every asymmetric flipped prop on the wrong side.
+
+The footprint of each solid prop is the band of its own silhouette that rests on the ground
+(`SOLID` in `prop_collision.py`, in px measured up from the art's lowest opaque row). That
+band is eroded to drop tendrils - root hairs, thin bones, the skeleton king's arms, which
+would otherwise balloon the hull - and what survives becomes one convex polygon per lump.
+Trees and logs (GreenForest) and trees, rocks, ruins and big skulls (UndeadForest) are
+solid; grass, mushrooms, ferns, loose bones and rubble stay walkable.
+
+GreenForest's ground rocks are the exception to the "props are the 1px atlas" rule: they are
+32x32 tiles in the 16px **decor** atlas with no `texture_origin` at all, so their local frame
+is just `art (u, v) -> (u - 16, v - 16)`. They are listed separately in `DECOR_SOLID`, and a
+rock's whole silhouette is its footprint rather than a base band.
+
+GreenForest also carried a separate `Collision` TileMapLayer: one invisible 16x16 cell per
+tall tree, from back when props were Sprite2D nodes anchored at their base. The tile
+conversion moved the anchor into the canopy and left those cells behind, so all 430 of them
+were invisible walls standing in open grass. They are gone - `build_forest.py` no longer
+emits them and the trees carry trunk-shaped polygons instead. UndeadForest's `Collision`
+layer is terrain (cliff faces and water) and is untouched.
+
+Props that stayed as **nodes** cannot hold a tileset polygon: UndeadForest's 46 animated
+ones, and the whole of BossPlace, which was never converted to tiles. Those get one
+`PropsCollision` StaticBody2D per scene with a `CollisionPolygon2D` per instance, rather
+than a body each. Both `Sprite2D` and `AnimatedSprite2D` props here are centred with
+`offset = (0, -h/2)`, so the art's bottom edge lands exactly on the node origin:
+art `(u, v)` -> local `(u - w/2, v - h)`, mirrored about x when the node is flipped. The
+animated kinds are keyed by *source region* rather than SpriteFrames id, because the two
+scenes number theirs differently for the same art.
+
+```
+python prop_collision.py --out out      # re-author both tilesets + all three scenes
+```
+
+It is idempotent - it strips what it wrote last time before writing again - and rewrites
+`Art/*/…TileSet.tres` plus GreenForest, UndeadForest and BossPlace. The scene steps chain
+through `out/`, so several passes may touch the same scene.
+
+### Bushes: drawn over the player, and they slow it down
+
+Walking into a bush should read as pushing through branches, which takes two things the
+tilesets could not express on their own.
+
+- **Drawn over the player.** Bushes used to be y-sorted in with the trees in `Props`, so the
+  player passed in front of them as often as behind. They are split out into their own
+  **`Bushes` TileMapLayer at `z_index = 1`**, which draws over the player unconditionally -
+  walk into one and you are hidden. Trees stay in `Props` at z 0 and keep y-sorting normally.
+  BossPlace has no bush layer to split, so its 16 bush *sprites* get `z_index = 1` directly.
+- **Sensed without blocking.** Bushes carry a second polygon on **physics layer 8
+  ("Foliage", bit 128)**, which nothing masks - it blocks no one and exists only to be read.
+  `PlayerMain.is_in_bush()` asks for it with a shape query and `move_speed_scale()` returns
+  `1 - bush_slow` (0.6) while inside, which `PlayerWalkState` applies to its target speed.
+
+Two things worth knowing before changing that:
+
+- **An `Area2D` does not work here.** A sensor Area2D on the player, correctly masked and
+  positioned, reports *zero* overlapping bodies against TileMapLayer's own static foliage
+  bodies, while a `intersect_shape` at the identical transform and mask returns the hit. The
+  query is also answered on the frame it is asked rather than one frame late.
+- **The roll is deliberately exempt.** Only `PlayerWalkState` scales its speed. A dodge that
+  scenery can slow is a dodge the player cannot commit to on sight.
+
+The bush slow is forest-only by design: BossPlace's bushes are lifted for the visual but
+carry no foliage polygon, because a slow field inside a boss arena reads as the dodge being
+cheated rather than as scenery.
+
+`Scenes/Interactables/Bonfire.tscn` sits next to this: it used to draw at `z_index = 5`, on
+top of the player standing on it. It is z 0 now, and the three y-sorted outdoor levels drop
+their own instance to -1 so the player is strictly above it - still clear of every ground
+layer, which sits at -3 and below. The "Press 'E'" label carries its own `z_index` so it
+stays readable over the scenery.
+
+Check the result by actually playing it: `prop_collision_check.gd` drives the real Player
+at every prop in a level and fails on anything the player's body can enter, on any walkable
+prop that turns out to block a clear lane, and on any bush that either blocks the player or
+fails to slow it.
+
+```
+godot --headless --path . res://Tools/MapGen/prop_collision_check.tscn \
+	  --fixed-fps 1000 --quit-after 1000000 -- res://Scenes/Levels/GreenForest.tscn
+```
+
+`--fixed-fps` matters: without it the loop waits on real time and the run takes minutes
+instead of a couple of seconds. For a picture rather than a verdict, run any level with
+`--debug-collisions` and set the layers' `collision_visibility_mode` to force-show.
 
 ## Boss arena and boss sprites
 

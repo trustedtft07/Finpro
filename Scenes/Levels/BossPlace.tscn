@@ -433,12 +433,14 @@ tile_set = ExtResource("1_ts")
 y_sort_enabled = true
 
 [node name="P0" type="Sprite2D" parent="Props"]
+z_index = 1
 position = Vector2(464, 336)
 texture = SubResource("At0")
 offset = Vector2(0, -24)
 flip_h = true
 
 [node name="P1" type="Sprite2D" parent="Props"]
+z_index = 1
 position = Vector2(368, 1248)
 texture = SubResource("At0")
 offset = Vector2(0, -24)
@@ -466,6 +468,7 @@ texture = SubResource("At4")
 offset = Vector2(0, -48)
 
 [node name="P6" type="Sprite2D" parent="Props"]
+z_index = 1
 position = Vector2(1608, 784)
 texture = SubResource("At5")
 offset = Vector2(0, -24)
@@ -499,12 +502,14 @@ texture = SubResource("At10")
 offset = Vector2(0, -40)
 
 [node name="P12" type="Sprite2D" parent="Props"]
+z_index = 1
 position = Vector2(1712, 1104)
 texture = SubResource("At11")
 offset = Vector2(0, -32)
 flip_h = true
 
 [node name="P13" type="Sprite2D" parent="Props"]
+z_index = 1
 position = Vector2(256, 1056)
 texture = SubResource("At0")
 offset = Vector2(0, -24)
@@ -517,6 +522,7 @@ offset = Vector2(0, -32)
 flip_h = true
 
 [node name="P15" type="Sprite2D" parent="Props"]
+z_index = 1
 position = Vector2(1656, 288)
 texture = SubResource("At5")
 offset = Vector2(0, -24)
@@ -574,6 +580,7 @@ offset = Vector2(0, -32)
 flip_h = true
 
 [node name="P25" type="Sprite2D" parent="Props"]
+z_index = 1
 position = Vector2(528, 1264)
 texture = SubResource("At11")
 offset = Vector2(0, -32)
@@ -595,6 +602,7 @@ offset = Vector2(0, -40)
 flip_h = true
 
 [node name="P29" type="Sprite2D" parent="Props"]
+z_index = 1
 position = Vector2(1504, 304)
 texture = SubResource("At0")
 offset = Vector2(0, -24)
@@ -638,6 +646,7 @@ texture = SubResource("At2")
 offset = Vector2(0, -24)
 
 [node name="P37" type="Sprite2D" parent="Props"]
+z_index = 1
 position = Vector2(296, 976)
 texture = SubResource("At19")
 offset = Vector2(0, -24)
@@ -658,6 +667,7 @@ texture = SubResource("At21")
 offset = Vector2(0, -32)
 
 [node name="P41" type="Sprite2D" parent="Props"]
+z_index = 1
 position = Vector2(2008, 608)
 texture = SubResource("At19")
 offset = Vector2(0, -24)
@@ -675,6 +685,7 @@ offset = Vector2(0, -24)
 flip_h = true
 
 [node name="P44" type="Sprite2D" parent="Props"]
+z_index = 1
 position = Vector2(1576, 976)
 texture = SubResource("At5")
 offset = Vector2(0, -24)
@@ -687,11 +698,13 @@ offset = Vector2(0, -40)
 flip_h = true
 
 [node name="P46" type="Sprite2D" parent="Props"]
+z_index = 1
 position = Vector2(1968, 336)
 texture = SubResource("At0")
 offset = Vector2(0, -24)
 
 [node name="P47" type="Sprite2D" parent="Props"]
+z_index = 1
 position = Vector2(2024, 944)
 texture = SubResource("At19")
 offset = Vector2(0, -24)
@@ -720,6 +733,7 @@ texture = SubResource("At22")
 offset = Vector2(0, -24)
 
 [node name="P52" type="Sprite2D" parent="Props"]
+z_index = 1
 position = Vector2(1720, 912)
 texture = SubResource("At5")
 offset = Vector2(0, -24)
@@ -774,6 +788,7 @@ texture = SubResource("At2")
 offset = Vector2(0, -24)
 
 [node name="P62" type="Sprite2D" parent="Props"]
+z_index = 1
 position = Vector2(1800, 992)
 texture = SubResource("At5")
 offset = Vector2(0, -24)
@@ -790,6 +805,7 @@ texture = SubResource("At27")
 offset = Vector2(0, -24)
 
 [node name="P65" type="Sprite2D" parent="Props"]
+z_index = 1
 position = Vector2(328, 800)
 texture = SubResource("At19")
 offset = Vector2(0, -24)
@@ -900,7 +916,155 @@ offset = Vector2(0, -56)
 [node name="Boss" parent="." instance=ExtResource("7_boss")]
 position = Vector2(1096, 648)
 
+[node name="PropsCollision" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="P2_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(1784, 1120)
+polygon = PackedVector2Array(21, -16, 9, -5, -15, -6, -21, -10, -21, -17, -16, -24, -8, -29, 16, -29, 21, -21)
+
+[node name="P4_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(1528, 1264)
+polygon = PackedVector2Array(-25, -20, -21, -34, 24, -34, 30, -25, 30, -20, 24, -12, 10, -7, -23, -10, -25, -13)
+
+[node name="P5_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(248, 352)
+polygon = PackedVector2Array(-22, -22, -9, -31, 37, -31, 39, -15, 29, -1, -9, -2, -23, -15)
+
+[node name="P5_1" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(248, 352)
+polygon = PackedVector2Array(-36, -31, -21, -31, -21, -23, -24, -20, -29, -20, -37, -25)
+
+[node name="P8_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(848, 1264)
+polygon = PackedVector2Array(48, -77, 23, -59, 11, -55, -1, -55, -15, -62, -35, -95, -35, -109, -1, -115, 16, -115, 24, -112, 34, -104, 48, -88)
+
+[node name="P14_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(1904, 400)
+polygon = PackedVector2Array(26, -19, 9, -4, -5, -3, -13, -7, -25, -26, -25, -31, 26, -31)
+
+[node name="P17_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(1288, 1104)
+polygon = PackedVector2Array(21, -16, 9, -5, -15, -6, -21, -10, -21, -17, -16, -24, -8, -29, 16, -29, 21, -21)
+
+[node name="P18_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(1592, 400)
+polygon = PackedVector2Array(21, -16, 9, -5, -15, -6, -21, -10, -21, -17, -16, -24, -8, -29, 16, -29, 21, -21)
+
+[node name="P20_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(1896, 992)
+polygon = PackedVector2Array(-25, -20, -21, -34, 24, -34, 30, -25, 30, -20, 24, -12, 10, -7, -23, -10, -25, -13)
+
+[node name="P21_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(1688, 688)
+polygon = PackedVector2Array(-25, -20, -21, -34, 24, -34, 30, -25, 30, -20, 24, -12, 10, -7, -23, -10, -25, -13)
+
+[node name="P24_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(384, 400)
+polygon = PackedVector2Array(26, -19, 9, -4, -5, -3, -13, -7, -25, -26, -25, -31, 26, -31)
+
+[node name="P27_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(184, 1024)
+polygon = PackedVector2Array(-15, -28, 12, -28, 16, -22, 16, -18, 7, -6, -1, -6, -17, -13, -18, -15)
+
+[node name="P28_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(752, 1104)
+polygon = PackedVector2Array(15, -10, 9, -5, -6, -4, -11, -10, -11, -14, -9, -17, 16, -17)
+
+[node name="P31_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(1944, 704)
+polygon = PackedVector2Array(-15, -28, 12, -28, 16, -22, 16, -18, 7, -6, -1, -6, -17, -13, -18, -15)
+
+[node name="P33_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(1488, 1024)
+polygon = PackedVector2Array(-26, -31, 25, -31, 25, -26, 13, -7, 5, -3, -9, -4, -26, -19)
+
+[node name="P34_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(2056, 736)
+polygon = PackedVector2Array(-21, -21, -16, -29, 8, -29, 16, -24, 21, -17, 21, -10, 15, -6, -9, -5, -21, -16)
+
+[node name="P35_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(440, 784)
+polygon = PackedVector2Array(21, -7, 14, -3, 1, -2, -16, -10, -22, -15, -21, -27, -18, -30, 21, -30)
+
+[node name="P39_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(576, 208)
+polygon = PackedVector2Array(-46, -41, -42, -43, 26, -43, 31, -33, 30, -25, 14, -18, -9, -17, -46, -30, -48, -32)
+
+[node name="P43_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(136, 1248)
+polygon = PackedVector2Array(24, -19, 22, -5, 10, 0, 5, 0, -19, -7, -23, -12, -24, -20, -21, -26, 23, -25)
+
+[node name="P49_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(152, 384)
+polygon = PackedVector2Array(-23, -15, -17, -23, 13, -23, 17, -17, 17, -14, -5, -1, -14, -2, -23, -11)
+
+[node name="P50_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(2056, 480)
+polygon = PackedVector2Array(23, -11, 14, -2, 5, -1, -17, -14, -17, -17, -13, -23, 17, -23, 23, -15)
+
+[node name="P51_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(1704, 160)
+polygon = PackedVector2Array(-23, -25, 21, -26, 24, -20, 23, -12, 19, -7, -5, 0, -10, 0, -22, -5, -24, -19)
+
+[node name="P54_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(312, 1152)
+polygon = PackedVector2Array(-21, -21, -16, -29, 8, -29, 16, -24, 21, -17, 21, -10, 15, -6, -9, -5, -21, -16)
+
+[node name="P55_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(568, 1184)
+polygon = PackedVector2Array(21, -7, 14, -3, 1, -2, -16, -10, -22, -15, -21, -27, -18, -30, 21, -30)
+
+[node name="P67_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(888, 1104)
+polygon = PackedVector2Array(18, -15, 17, -13, 1, -6, -7, -6, -16, -18, -16, -22, -12, -28, 15, -28)
+
+[node name="P68_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(1304, 208)
+polygon = PackedVector2Array(-15, -28, 12, -28, 16, -22, 16, -18, 7, -6, -1, -6, -17, -13, -18, -15)
+
+[node name="A0_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(136, 880)
+polygon = PackedVector2Array(-22, -33, -20, -36, 26, -36, 29, -34, 24, -9, 19, -7, -15, -8, -20, -16)
+
+[node name="A1_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(312, 208)
+polygon = PackedVector2Array(-15, -29, 14, -29, 13, -11, 9, -6, -12, -9, -15, -14)
+
+[node name="A2_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(728, 336)
+polygon = PackedVector2Array(-24, -23, 12, -22, 12, -15, 7, -11, -4, -8, -12, -8, -26, -12)
+
+[node name="A3_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(2056, 368)
+polygon = PackedVector2Array(-15, -29, 14, -29, 13, -11, 9, -6, -12, -9, -15, -14)
+
+[node name="A4_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(568, 624)
+polygon = PackedVector2Array(-15, -29, 14, -29, 13, -11, 9, -6, -12, -9, -15, -14)
+
+[node name="A5_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(1168, 192)
+polygon = PackedVector2Array(-26, -23, -1, -23, 1, -21, -1, -10, -10, -7, -15, -7, -27, -13)
+
+[node name="A6_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(408, 912)
+polygon = PackedVector2Array(-15, -29, 14, -29, 13, -11, 9, -6, -12, -9, -15, -14)
+
+[node name="A7_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(1488, 240)
+polygon = PackedVector2Array(-27, -22, -24, -30, 23, -30, 27, -19, 26, -2, 24, 0, -25, 0, -27, -2)
+
+[node name="A8_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(440, 1104)
+polygon = PackedVector2Array(-15, -29, 14, -29, 13, -11, 9, -6, -12, -9, -15, -14)
+
+[node name="A9_0" type="CollisionPolygon2D" parent="PropsCollision"]
+position = Vector2(128, 528)
+polygon = PackedVector2Array(-27, -22, -24, -30, 23, -30, 27, -19, 26, -2, 24, 0, -25, 0, -27, -2)
 [node name="Bonfire" parent="." instance=ExtResource("6_bonfire")]
+z_index = -1
 position = Vector2(1032, 1196)
 
 [node name="ReturnExit" parent="." instance=ExtResource("4_exit")]

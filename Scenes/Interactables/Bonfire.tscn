@@ -11,7 +11,10 @@ radius = 40.0
 [node name="Bonfire" type="Area2D" node_paths=PackedStringArray("label", "glow", "ember")]
 collision_layer = 32
 collision_mask = 2
-z_index = 5
+#A knee-high log pile the player walks up to and stands on: it used to sit at z 5 and
+#draw over them. 0 puts it back in the y-sort; the levels that want the player strictly
+#on top drop their own instance to -1, which is still above every ground layer.
+z_index = 0
 texture_filter = 1
 script = ExtResource("1_bnfr1")
 label = NodePath("Label")
@@ -42,6 +45,7 @@ color = Color(1.0, 0.6, 0.2, 1.0)
 texture = ExtResource("3_lit01")
 
 [node name="Label" type="Label" parent="."]
+z_index = 6
 offset_left = -32.0
 offset_top = -30.0
 offset_right = 80.0
