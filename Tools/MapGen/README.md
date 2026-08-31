@@ -235,6 +235,46 @@ irregular offsets and share space with a black annotation bracket the artist lef
 the sheet. It lifts each piece out by connected components and re-pastes it into a
 uniform grid - the pixels are untouched, only their placement changes.
 
+### Phase 3: wearing both
+
+The fight is three phases over one health pool, handed over at `phase2_health` (0.66) and
+`phase3_health` (0.33) of the bar. Phase 3 is not new moves - it is phases 1 and 2 taking
+**strict alternating turns**, and the boss changes body to suit the turn it is about to
+take: the sword to walk someone down and swing, the knight to root itself and shoot.
+
+That means the shape on screen *is* the tell. Sword out means it is coming for you and
+something melee is next; knight out means it is nailed to the floor and something is being
+thrown. Movement comes with the body and nothing else - `_do_chase` is the sword's, the
+knight's acts all zero the velocity.
+
+The whole phase is two flags. `_wearing_knight` says which body is on, and everything that
+reads the art asks `_is_sword_form()` rather than the phase number - turning, the
+narrow/wide cell offsets, which `death` to play - because phase 3 is the one phase where
+those no longer follow from it. `_turn_spent` is set the moment an attack starts, and the
+two idle states hand over when they see it: `_do_recover` (the sword is done swinging) and
+`_do_idle2` (the knight is done shooting).
+
+Three things that were decided rather than fallen into:
+
+- **No invincibility across the morph.** It fires after every single attack, so i-frames
+  there would delete most of the fight's DPS windows. The 0.4s change is a free opening,
+  which is what makes the alternation read as a rhythm instead of a wall.
+- **A parried swing still counts as spent.** The punish is the player's reward; letting the
+  boss retry its melee turn would hand the stagger straight back.
+- **A melee turn times out** (`melee_turn_timeout`, 5s). The sword walks faster than the
+  player so it normally arrives on its own, but a player who circles out of every band
+  would otherwise hold the boss in a turn it can never spend and stop the alternation dead.
+  On the timeout the knight takes over instead - it is rooted and does not care about range.
+
+```
+godot --headless --path . res://Tools/MapGen/boss_phase_check.tscn \
+	  --fixed-fps 1000 --quit-after 1000000
+```
+
+`boss_phase_check.gd` plays the fight through and fails if the phases do not all announce,
+if two turns of the same kind ever run back to back, if the sword does not walk or the
+knight does, or if the fight stalls instead of ending.
+
 ### Which rows are actually attacks
 
 Worth knowing before touching `BossMain.gd`: **rows 0-3 of `Sword.png` are all idle /

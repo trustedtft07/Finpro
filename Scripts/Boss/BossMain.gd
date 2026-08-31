@@ -1,7 +1,7 @@
 extends EnemyMain
 class_name BossMain
 
-#Two-phase boss.
+#Three-phase boss.
 #  Phase 1 - the Sword: walks the player down and answers with one of three swings,
 #            one per range band - a ground slam at its feet, a whirling spin that
 #            sweeps the ring around it twice, and a forward cleave that lances a long
@@ -9,35 +9,38 @@ class_name BossMain
 #  Phase 2 - the Crystal Knight: roots itself in place and fights at range with a
 #            charged beam, fans of small shards, and a lightning storm that paints a
 #            circle on the ground before every bolt lands.
-#Both phases share one health pool, the way a soulslike boss bar does.
-#
-#Every hit is fired from the animation frame that draws it, never from a timer, so
-#the damage window can't drift out of sync with what the player sees. The frame
-#numbers and hit radii below were measured off the sprite sheets - see
-#Tools/MapGen/README.md.
+#  Phase 3 - both, alternating. It wears whichever body the next attack needs and
+#            changes on the spot: the sword to walk someone down and swing, the knight
+#            to root and shoot. Strictly one turn each, melee then ranged then melee,
+#            so the player can read what is coming from the shape on screen. Movement
+#            comes with the body - the sword walks, the knight never moves.
+#All three phases share one health pool. Hits fire from the animation frame that draws
+#them (the spin is the one exception, see _do_spin) so the damage window can't drift out
+#of sync with what the player sees. Frame numbers and radii were measured off the sprite
+#sheets - see Tools/MapGen/README.md.
 
 signal phase_started(phase : int, boss_name : String)
 signal boss_defeated
 
 enum Act {
 	SLEEP,                                   # waiting for the player to walk in
-	CHASE, SLAM, SPIN, CLEAVE, RECOVER,      # phase 1
-	TRANSITION,
-	IDLE2, CAST, SPREAD, STORM,              # phase 2
+	CHASE, SLAM, SPIN, CLEAVE, RECOVER,      # the sword's moves
+	TRANSITION,                              # the between-phase set piece
+	IDLE2, CAST, SPREAD, STORM,              # the knight's moves
+	MORPH,                                   # phase 3 changing body
 	DYING,
 }
 
 const PHASE1 := 1
 const PHASE2 := 2
+const PHASE3 := 3
 
 #--- frames that actually connect, read off Sword.png -------------------------
 #row 4 "slam": source column 4 draws the ground shockwave, column 8 the rising dome.
 #Both are drawn centred on the character, so both hit as circles.
 #
-#These are indices into the PACK, not columns on the sheet, and the two stopped matching
-#when the ring frames moved out to "spin": dropping columns 5 and 6 pulls the dome
-#forward from index 8 to index 6. Re-cutting the slam in make_boss_frames.py means
-#re-checking this pair.
+#Indices into the PACK, not columns on the sheet: dropping the ring frames pulled the
+#dome from index 8 to 6. Re-cutting the slam means re-checking this pair.
 const SLAM_HIT_FRAME := 4
 const SLAM_DOME_FRAME := 6
 #"cleave" is row 5 re-packed in place (see Tools/MapGen/make_boss_frames.py): frame 1
@@ -57,6 +60,12 @@ const CELL_CENTRE := Vector2(32.0, 32.0)
 @export_group("Identity")
 @export var phase1_name : String = "The Crimson Sword"
 @export var phase2_name : String = "Crystal Knight, Reborn"
+@export var phase3_name : String = "The Sundered Crown"
+#Fractions of the health bar the next phase starts at. Even thirds by default: the fight
+#used to be a 50/50 split, and giving phase 3 a quarter of the bar left the sword phase
+#owning half of a three-phase fight.
+@export var phase2_health : float = 0.66
+@export var phase3_health : float = 0.33
 
 @export_group("Activation")
 @export var activation_range : float = 420.0
@@ -79,15 +88,13 @@ const CELL_CENTRE := Vector2(32.0, 32.0)
 @export var slam_recover : float = 0.6
 
 #--- the spin: the ring around it, twice -------------------------------------
-#Reaches further than the slam and covers every angle, so the band between the two is no
-#longer a safe place to stand and wait. The answer is to be outside spin_radius when it
-#starts, or to roll through the crescent - not to sidestep, which is the cleave's
-#answer, and not to back off one step, which is the slam's.
+#Covers every angle and reaches further than the slam, so mid-range is no longer a safe
+#place to wait. The answer is to be outside spin_radius, or to roll through the crescent.
 @export var spin_radius : float = 165.0
 #Half-width of the damaging wedge, in degrees
 @export var spin_arc : float = 34.0
 @export var spin_damage : int = 26
-#Long enough to react to on sight. The aura draws a closing ring for all of it.
+#Long enough to react to on sight; the aura draws a closing ring for all of it
 @export var spin_windup : float = 0.5
 @export var spin_sweep_time : float = 1.0
 @export var spin_revolutions : float = 2.0
@@ -138,6 +145,17 @@ const CELL_CENTRE := Vector2(32.0, 32.0)
 @export var storm_bolts : int = 7
 @export var idle2_gap : float = 1.15
 
+@export_group("Phase 3")
+#Long enough to read the body change as a tell rather than a glitch, short enough that
+#it is not most of the fight - two of these run per melee-then-ranged cycle
+@export var morph_time : float = 0.4
+#Breath after arriving as the knight, before the shot goes out
+@export var morph_gap : float = 0.45
+#The sword walks faster than the player, so it normally reaches slam range on its own.
+#This is the backstop: if a kiting player keeps it from landing anything, hand the turn
+#to the knight instead of chasing forever and never alternating again.
+@export var melee_turn_timeout : float = 5.0
+
 @export_group("Wiring")
 @export var phase1_frames : SpriteFrames
 @export var phase2_frames : SpriteFrames
@@ -171,11 +189,15 @@ var _cleave_dir : Vector2 = Vector2.RIGHT
 var _cleave_ready_at : float = 0.0
 var _spin_from : float = 0.0
 var _spin_ready_at : float = 0.0
+#Phase 3 only: which body is on, and whether it has already taken its turn
+var _wearing_knight : bool = false
+var _turn_spent : bool = false
+var _melee_turn_ends : float = 0.0
 
 func _ready():
 	super()
 	_origin = global_position
-	_wear_phase1()
+	_wear_sword()
 	if hud:
 		hud.hide_bar()
 
@@ -185,9 +207,9 @@ func _physics_process(delta):
 
 	if act == Act.DYING:
 		return
-	#Facing is locked through a cleave: the lance is drawn along the sprite's x and
-	#the hitbox reads its direction off that, so a mid-swing flip would mirror the hit
-	#away from the streak. A spin drives its own facing off the sweep instead.
+	#Locked through a cleave: the lance is drawn along the sprite's x and the hitbox
+	#reads its direction off that, so a mid-swing flip would mirror the hit away from
+	#the streak. A spin drives its own facing off the sweep instead.
 	if act != Act.CLEAVE and act != Act.SPIN:
 		_face_player()
 
@@ -212,6 +234,7 @@ func _physics_process(delta):
 		Act.CAST: _do_cast()
 		Act.SPREAD: _do_spread()
 		Act.STORM: _do_storm()
+		Act.MORPH: _do_morph()
 
 #region helpers
 #CharacterBase turns by velocity, which a rooted phase 2 boss never has
@@ -226,22 +249,28 @@ func _to_player() -> Vector2:
 		return Vector2.RIGHT
 	return _player.global_position - global_position
 
+#Which body is on screen, whatever phase put it there. Everything that reads the art -
+#turning, the narrow/wide cell offsets, which "death" to play - asks this rather than the
+#phase number, because phase 3 wears both.
+func _is_sword_form() -> bool:
+	return not _wearing_knight
+
 func _face_player():
 	if not _alive_player():
 		return
-	#Only phase 1 has a front to turn. Crystal Knight is drawn symmetrical and says
+	#Only the sword has a front to turn. Crystal Knight is drawn symmetrical and says
 	#which way it is swinging with attack_l / attack_r instead - mirroring it as well
 	#would cancel that out and bring the crescent down on the side away from the
 	#player. Its beam and shards leave from the centre line, so nothing else notices.
-	if phase != PHASE1:
+	if _wearing_knight:
 		return
 	var dir = -1.0 if flipped_horizontal else 1.0
 	var size = absf(sprite.scale.x)
 	sprite.scale.x = size * (dir if _to_player().x >= 0.0 else -dir)
 
 func _enter(new_act : int, duration : float):
-	#Every way out of a spin comes through here - recovery, a parry, the phase flip,
-	#death - so this is the one place the whirl has to be taken off screen
+	#Every way out of a spin comes through here, so it is the one place the whirl has to
+	#be taken off screen
 	if new_act != Act.SPIN and spin_aura:
 		spin_aura.finish()
 	act = new_act
@@ -249,11 +278,19 @@ func _enter(new_act : int, duration : float):
 	_fired = false
 	_fired2 = false
 
-func _wear_phase1():
+func _wear_sword():
+	_wearing_knight = false
 	sprite.sprite_frames = phase1_frames
 	sprite.scale = Vector2(phase1_scale, phase1_scale)
 	_apply_body(phase1_body)
 	_play_narrow("idle")
+
+func _wear_knight():
+	_wearing_knight = true
+	sprite.sprite_frames = phase2_frames
+	sprite.offset = phase2_offset
+	sprite.scale = Vector2(phase2_scale, phase2_scale)
+	_apply_body(phase2_body)
 
 #Every phase 1 animation is packed in 64px cells except the cleave, which needs the
 #full 128 and rides its own sprite offset to stay anchored. Those two have to change
@@ -284,7 +321,7 @@ func _check_activation():
 	_play_narrow("walk")
 	_enter(Act.CHASE, 0.0)
 
-#Damage the player if it stands inside `radius` - the shape the slam draws.
+#The circle the slam draws
 func _hit_player(radius : float, damage : int):
 	if not _alive_player():
 		return
@@ -293,8 +330,8 @@ func _hit_player(radius : float, damage : int):
 		return
 	_damage_player(damage, offset)
 
-#The lance: a straight band down `dir`, the shape the streak draws. A little slack
-#behind the boss covers the frame where the streak still overlaps its own body.
+#The lance: a straight band down `dir`. The slack behind covers the frame where the
+#streak still overlaps the boss's own body.
 func _hit_player_band(dir : Vector2, reach : float, half_width : float, damage : int):
 	if not _alive_player():
 		return
@@ -306,7 +343,7 @@ func _hit_player_band(dir : Vector2, reach : float, half_width : float, damage :
 		return
 	_damage_player(damage, offset)
 
-#The sweep: a wedge of `half_angle` degrees either side of `dir`, out to `radius`.
+#A wedge of `half_angle` degrees either side of `dir`, out to `radius`
 func _hit_player_wedge(dir : Vector2, radius : float, half_angle : float, damage : int):
 	if not _alive_player():
 		return
@@ -317,7 +354,7 @@ func _hit_player_wedge(dir : Vector2, radius : float, half_angle : float, damage
 		return
 	_damage_player(damage, offset)
 
-#Honours the parry window - every hit above lands here, so a parry catches all of them
+#Every hit above lands here, so one parry check catches all of them
 func _damage_player(damage : int, offset : Vector2):
 	if _player.try_parry(self):
 		return
@@ -347,8 +384,15 @@ func _do_chase():
 		velocity = Vector2.ZERO
 		_start_slam()
 		return
-	#Cleave is checked first because it is the pickier of the two mid-range moves -
-	#letting the spin claim the whole band would mean the lance almost never comes out
+	#Phase 3 backstop: a player who keeps circling out of every band would otherwise hold
+	#the boss in a melee turn it can never spend, and the alternation would stop dead.
+	#Hand the turn to the knight, which is rooted and does not care about the distance.
+	if phase == PHASE3 and not _turn_spent and _now() >= _melee_turn_ends:
+		velocity = Vector2.ZERO
+		_morph(true)
+		return
+	#Cleave first - it is the pickier of the two, and letting the spin claim the band
+	#would mean the lance almost never comes out
 	if _can_cleave(offset, distance):
 		velocity = Vector2.ZERO
 		_start_cleave()
@@ -364,6 +408,7 @@ func _do_chase():
 	move_and_slide()
 
 func _start_slam():
+	_turn_spent = true
 	_play_narrow("slam")
 	_enter(Act.SLAM, 0.0)
 
@@ -379,17 +424,16 @@ func _do_slam():
 	if not sprite.is_playing():
 		_enter(Act.RECOVER, slam_recover)
 
-#The gap the other two moves leave: past the slam's reach, but not lined up for a lance
+#The gap the other two leave: past the slam's reach, not lined up for a lance
 func _can_spin(distance : float) -> bool:
 	if _now() < _spin_ready_at:
 		return false
 	return distance <= spin_trigger_range
 
 func _start_spin():
-	#The sweep starts on the far side and comes round to the player, rather than opening
-	#on top of them. That buys half a revolution of travel the player can watch and react
-	#to on top of the windup, which is the difference between a move you dodge on sight
-	#and one you can only dodge by having memorised it.
+	_turn_spent = true
+	#Starts on the far side and comes round, rather than opening on top of the player -
+	#half a revolution of visible travel on top of the windup
 	_spin_from = _to_player().angle() + PI
 	_play_narrow("spin_up")
 	if spin_aura:
@@ -397,10 +441,9 @@ func _start_spin():
 	_enter(Act.SPIN, spin_windup + spin_sweep_time)
 	_spin_ready_at = _now() + spin_cooldown
 
-#The one phase 1 move driven by a timer rather than by sprite.frame. The other two fire
-#single hits on the frame that draws them, which is why they read their own animation;
-#this one needs a sweep angle that is continuous, and its four ring frames loop
-#underneath for however long spin_sweep_time is set to.
+#Timer-driven, unlike the other two: the hitbox is a wedge rotating continuously rather
+#than a single frame that connects, and the four ring frames loop underneath for however
+#long spin_sweep_time is set to.
 func _do_spin():
 	var elapsed = (spin_windup + spin_sweep_time) - _timer
 
@@ -409,7 +452,7 @@ func _do_spin():
 			spin_aura.telegraph(elapsed / maxf(spin_windup, 0.001))
 		return
 
-	#One-shot, on the frame the windup ends: the loop below runs every frame after it
+	#One-shot, on the frame the windup ends
 	if sprite.animation != "spin":
 		_play_narrow("spin")
 		GameManager.hitstop(0.04, 0.35)
@@ -422,16 +465,15 @@ func _do_spin():
 	if spin_aura:
 		spin_aura.sweep(angle)
 	_face_sweep(aim)
-	#Standing in it is meant to hurt. The player's own i-frames are what keep this from
-	#landing every physics frame, so one revolution is at most one hit.
+	#The player's own i-frames keep this from landing every physics frame, so one
+	#revolution is at most one hit
 	_hit_player_wedge(aim, spin_radius, spin_arc, spin_damage)
 
 	if _timer <= 0.0:
 		_play_narrow("idle")
 		_enter(Act.RECOVER, spin_recover)
 
-#Turning the boss to follow its own sweep is what sells four looping ring frames as one
-#continuous swing rather than four poses on repeat
+#Turning to follow its own sweep is what sells four looping frames as one swing
 func _face_sweep(aim : Vector2):
 	var dir = -1.0 if flipped_horizontal else 1.0
 	var size = absf(sprite.scale.x)
@@ -448,6 +490,7 @@ func _can_cleave(offset : Vector2, distance : float) -> bool:
 	return absf(offset.y) <= cleave_band
 
 func _start_cleave():
+	_turn_spent = true
 	#Take the swing direction from the flip rather than from the player, so the band
 	#below can only ever point where the streak is actually drawn
 	_face_player()
@@ -479,6 +522,12 @@ func _do_recover():
 		_play_narrow("idle")
 	if _timer > 0.0:
 		return
+	#Phase 3: the sword has had its turn, so the knight takes the next one. A parried
+	#swing still counts as spent - the punish is the player's reward, not a free extra
+	#melee turn to walk back into.
+	if phase == PHASE3 and _turn_spent:
+		_morph(true)
+		return
 	_play_narrow("walk")
 	_enter(Act.CHASE, 0.0)
 
@@ -490,7 +539,8 @@ func _reset_fight():
 	health = max_health
 	healthbar.value = health
 	phase = PHASE1
-	_wear_phase1()
+	_turn_spent = false
+	_wear_sword()
 	if hud:
 		hud.hide_bar()
 	act = Act.SLEEP
@@ -500,8 +550,11 @@ func _reset_fight():
 func _start_transition():
 	invincible = true
 	velocity = Vector2.ZERO
-	#Half health can land mid-cleave, and "death" is packed in the narrow cells
-	_play_narrow("death")
+	#A threshold can land mid-attack, and the sword's "death" is packed in narrow cells
+	if _is_sword_form():
+		_play_narrow("death")
+	else:
+		sprite.play("death")
 	if hud:
 		hud.flash()
 	_enter(Act.TRANSITION, 0.0)
@@ -509,17 +562,63 @@ func _start_transition():
 func _do_transition():
 	if sprite.is_playing():
 		return
-	phase = PHASE2
 	invincible = false
-	sprite.sprite_frames = phase2_frames
-	sprite.offset = phase2_offset
-	sprite.scale = Vector2(phase2_scale, phase2_scale)
-	_apply_body(phase2_body)
-	sprite.play("spawn")
+	if phase == PHASE1:
+		phase = PHASE2
+		_wear_knight()
+		sprite.play("spawn")
+		if hud:
+			hud.set_name_text(phase2_name)
+		phase_started.emit(PHASE2, phase2_name)
+		_enter(Act.IDLE2, 0.9)
+		return
+	#Into phase 3, which opens on the sword: it arrives walking, which reads as the
+	#fight speeding up rather than as the knight simply carrying on.
+	phase = PHASE3
 	if hud:
-		hud.set_name_text(phase2_name)
-	phase_started.emit(PHASE2, phase2_name)
-	_enter(Act.IDLE2, 0.9)
+		hud.set_name_text(phase3_name)
+	phase_started.emit(PHASE3, phase3_name)
+	_morph(false)
+#endregion
+
+#region phase 3 - wearing both
+#The whole of phase 3 is this: put on the body the next attack needs, take exactly one
+#turn with it, then put on the other. Everything the two halves do is already written -
+#the sword's chase and swings, the knight's rooted casts - so this only decides which of
+#them is allowed to run, and hands over when its turn is used up.
+func _morph(to_knight : bool):
+	_turn_spent = false
+	velocity = Vector2.ZERO
+	if to_knight:
+		_wear_knight()
+		sprite.play("spawn")
+	else:
+		_wear_sword()
+		_melee_turn_ends = _now() + melee_turn_timeout
+	_flash_morph()
+	AudioManager.play_sound(AudioManager.PLAYER_ATTACK_SWING, 0.0, -4)
+	_enter(Act.MORPH, morph_time)
+
+func _do_morph():
+	velocity = Vector2.ZERO
+	if _timer > 0.0:
+		return
+	if _wearing_knight:
+		#The knight's own "spawn" runs ~0.75s, longer than the morph; IDLE2 waits for it
+		#to finish before it plays idle, so the gap covers the tail rather than cutting it
+		_enter(Act.IDLE2, morph_gap)
+	else:
+		_play_narrow("walk")
+		_enter(Act.CHASE, 0.0)
+
+#Reads as one body burning off into the other. Uses the sprite's own modulate, not the
+#node's - CharacterBase's hit flash owns that one and would fight this for it.
+func _flash_morph():
+	if sprite == null:
+		return
+	var tween = create_tween()
+	sprite.modulate = Color(2.4, 2.2, 2.6, 1.0)
+	tween.tween_property(sprite, "modulate", Color.WHITE, morph_time)
 #endregion
 
 #region phase 2
@@ -529,9 +628,14 @@ func _do_idle2():
 		sprite.play("idle")
 	if _timer > 0.0:
 		return
+	#Phase 3: the knight fires once, then hands the fight back to the sword
+	if phase == PHASE3 and _turn_spent:
+		_morph(false)
+		return
 	_pick_phase2_move()
 
 func _pick_phase2_move():
+	_turn_spent = true
 	var moves : Array[int] = [Act.CAST, Act.SPREAD, Act.STORM]
 	moves.erase(_last_move)
 	var choice = moves[randi() % moves.size()]
@@ -650,8 +754,12 @@ func _take_damage(amount):
 	super._take_damage(amount)
 	if hud:
 		hud.on_damaged(health)
-	#Half health flips the fight into its second phase instead of killing it
-	if phase == PHASE1 and not is_dead and health <= max_health * 0.5:
+	#Crossing a threshold turns the fight over instead of killing it
+	if is_dead:
+		return
+	if phase == PHASE1 and health <= max_health * phase2_health:
+		_start_transition()
+	elif phase == PHASE2 and health <= max_health * phase3_health:
 		_start_transition()
 
 #Bosses shrug most of the shove off, or a combo would push them out of the arena
@@ -660,10 +768,9 @@ func apply_knockback(direction : Vector2, force : float, duration : float = 0.15
 		return
 	super.apply_knockback(direction, force * 0.12, duration * 0.6)
 
-#A parry staggers the boss out of whichever phase 1 swing it was in. Moving to RECOVER
-#also drops the rest of that attack's hits - the slam's dome, the cleave's sweep, and
-#every remaining degree of the spin - so the parry cancels the follow-up, not just the
-#frame it caught.
+#Moving to RECOVER also drops the rest of the attack's hits - the slam's dome, the
+#cleave's sweep, every remaining degree of the spin - so a parry cancels the follow-up,
+#not just the frame it caught.
 func interrupt_attack():
 	if act != Act.SLAM and act != Act.CLEAVE and act != Act.SPIN:
 		return
@@ -683,7 +790,7 @@ func _die():
 	act = Act.DYING
 	velocity = Vector2.ZERO
 	#Same as the transition: the killing blow can land mid-cleave
-	if phase == PHASE1:
+	if _is_sword_form():
 		_play_narrow("death")
 	else:
 		sprite.play("death")
