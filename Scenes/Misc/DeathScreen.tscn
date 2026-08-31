@@ -1,11 +1,13 @@
 [gd_scene format=3 uid="uid://h61y6jpdtysp"]
 
-[ext_resource type="Script" uid="uid://co30dlf1jhb3t" path="res://Scripts/Reset.gd" id="1_y2wu1"]
+[ext_resource type="Script" path="res://Scripts/DeathScreen.gd" id="1_death1"]
 [ext_resource type="LabelSettings" uid="uid://1cnb4418rr7" path="res://Art/Fonts/pixelized_label_large.tres" id="2_k8myw"]
+[ext_resource type="LabelSettings" uid="uid://da8inon5cmt2r" path="res://Art/Fonts/pixelized_label.tres" id="3_hint1"]
 
-[node name="DeathScreen" type="CanvasLayer" unique_id=1508435965]
+[node name="DeathScreen" type="CanvasLayer" unique_id=1508435965 node_paths=PackedStringArray("label")]
 layer = 2
-script = ExtResource("1_y2wu1")
+script = ExtResource("1_death1")
+label = NodePath("Control/Label")
 
 [node name="Control" type="Control" parent="." unique_id=535363551]
 layout_mode = 3
@@ -22,14 +24,22 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-text = "You died!
-
-Press:
-'R' to respawn at your last bonfire
-or
-'Escape' to quit
-or
-'E' to return to first level"
+offset_top = -20.0
+text = "YOU DIED"
 label_settings = ExtResource("2_k8myw")
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="Hint" type="Label" parent="Control" unique_id=586291767]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -40.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "Esc - quit        Enter - return to the first level"
+label_settings = ExtResource("3_hint1")
+horizontal_alignment = 1

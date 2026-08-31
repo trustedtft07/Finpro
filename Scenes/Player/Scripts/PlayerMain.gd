@@ -9,6 +9,63 @@ class_name PlayerMain
 const DEATH_SCREEN = preload("res://Scenes/Misc/DeathScreen.tscn")
 const PROJECTILE = preload("res://Scenes/Interactables/Projectile.tscn")
 
+#region Input buffer
+#A press that arrives while the character is committed to something - mid swing, mid
+#roll, mid heal - used to be dropped outright: every state read Input directly, so an
+#action only counted on the exact frame its state happened to be listening. That is what
+#made the combat feel like it was ignoring inputs.
+#
+#Presses are recorded here instead and stay claimable for input_buffer_window, so a
+#swing queued a little early still comes out the moment the character is free.
+#
+#The window has to outlast the recovery it is meant to carry a press through, or it
+#expires before the state it was queued for will accept it: the punch is a 0.45s
+#animation that opens its cancel window at 0.30s, so anything under that just drops the
+#input again in a less obvious way.
+const BUFFERED_ACTIONS : Array[String] = ["Punch", "Kick", "Dash", "Parry", "Heal", "RangedAttack"]
+@export var input_buffer_window : float = 0.3
+
+var _buffered : String = ""
+var _buffer_timer : float = 0.0
+
+#Only the newest press is kept. Stacking them makes the character play out a queue the
+#player has already stopped meaning by the time it comes round.
+func _read_input_buffer(delta : float):
+	if(_buffer_timer > 0.0):
+		_buffer_timer -= delta
+		if(_buffer_timer <= 0.0):
+			_buffered = ""
+
+	for action in BUFFERED_ACTIONS:
+		if Input.is_action_just_pressed(action):
+			_buffered = action
+			_buffer_timer = input_buffer_window
+
+#States peek to decide a transition and the state being handed to claims the press, so
+#it survives the change_state() in between instead of being spent twice or not at all
+func peek_input(actions : Array) -> bool:
+	return _buffered != "" and actions.has(_buffered)
+
+func claim_input(actions : Array) -> String:
+	if(!peek_input(actions)):
+		return ""
+
+	var action = _buffered
+	clear_input_buffer()
+	return action
+
+func clear_input_buffer():
+	_buffered = ""
+	_buffer_timer = 0.0
+
+#Idle and Moving are the two states that leave the character free to act
+func is_free_to_act() -> bool:
+	if(fsm == null or fsm.current_state == null):
+		return false
+	var state_name = fsm.current_state.name
+	return state_name == "Idle" or state_name == "Moving"
+#endregion
+
 #region Healing (Gourd)
 #Getting hit while channeling interrupts the heal - charge still spent
 @export var max_heal_charges : int = 3
@@ -51,11 +108,6 @@ func set_facing_direction(dir : Vector2):
 		facing_direction = dir.normalized()
 
 func try_fire_projectile():
-	#Only allow firing while free to act, not mid melee-swing/roll/dying
-	var state_name = fsm.current_state.name
-	if(state_name != "Idle" && state_name != "Moving"):
-		return
-
 	if(!has_mana(projectile_mana_cost)):
 		return
 
@@ -70,8 +122,8 @@ func try_fire_projectile():
 
 #region Stamina
 @export var max_stamina : float = 100.0
-@export var stamina_regen_rate : float = 30.0
-@export var stamina_regen_delay : float = 0.7
+@export var stamina_regen_rate : float = 32.0
+@export var stamina_regen_delay : float = 0.55
 var stamina : float = 100.0
 var _stamina_regen_timer : float = 0.0
 
@@ -178,6 +230,17 @@ func apply_knockback(direction : Vector2, force : float, duration : float = 0.15
 		return
 	super.apply_knockback(direction, force, duration)
 
+#The base class turns on velocity.x, which flips the character to face wherever a
+#knockback happened to shove them and leaves a swing pointing the wrong way. Facing is
+#driven by intent here instead - the melee hitboxes hang off the sprite, so they follow.
+func Turn():
+	var direction = -1 if flipped_horizontal == true else 1
+
+	if(facing_direction.x < -0.05):
+		sprite.scale.x = -direction
+	elif(facing_direction.x > 0.05):
+		sprite.scale.x = direction
+
 func _process(delta):
 	super(delta)
 
@@ -186,17 +249,21 @@ func _process(delta):
 	aim_indicator.visible = !is_dead
 
 #Resources and action input share the physics frame with the state machine, so a press
-#can't be consumed on a render frame the states never see
+#can't be consumed on a render frame the states never see. This node is the state
+#machine's parent, so the buffer is always filled before any state reads it.
 func _physics_process(delta):
 	super(delta)
+	_read_input_buffer(delta)
 	_regen_stamina(delta)
 
-	if(Input.is_action_just_pressed("RangedAttack")):
+	#Nothing else wants this action, so it is spent here rather than in a state
+	if(is_free_to_act() and claim_input(["RangedAttack"]) != ""):
 		try_fire_projectile()
 
 func _die():
 	super()
 
+	clear_input_buffer()
 	fsm.force_change_state("Die")
 	var death_scene = DEATH_SCREEN.instantiate()
 	add_child(death_scene)

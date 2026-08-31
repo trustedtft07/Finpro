@@ -22,6 +22,11 @@ def grid(row, count, w=64, h=64, pitch=128):
     return [(c * pitch, row * 64, w, h) for c in range(count)]
 
 
+def cells(row, cols, w=64, h=64, pitch=128):
+    #Same grid, but only the columns named - used to re-cut a row into a second move
+    return [(c * pitch, row * 64, w, h) for c in cols]
+
+
 #Rows 0-3 are all idle/walk variants - the sword only bobs and the body never moves,
 #so none of them is an attack. Measured on the sheet: the body centroid shifts at most
 #1.3px across those rows, and the weapon pixel count stays flat. The sheet's real
@@ -49,12 +54,41 @@ CLEAVE_ROW = 5
 CLEAVE = [(0, 0, 3.5), (1, 0, 2.0),
           (5, 64, 1.5), (6, 64, 1.0), (3, 68, 1.5)]
 
+#Row 4 is packed as one move but draws two beats: a ground burst (the filled ellipse on
+#frame 4, its ring breaking up over 5-6) and a dome (frame 8, its ring over 9-10).
+#"slam" plays the row straight through, the way it always has.
+#
+#The spin is re-cut from that same row rather than invented, because rows 0-3 hold no
+#attack art at all. Frames 2-3 are the sword drawn back and carry the windup on their
+#own. Frames 5, 6, 9 and 10 are the only cells on the sheet that draw force leaving the
+#character in every direction at once, and the sword sits at a different angle in each -
+#looped while BossMain turns the boss to follow its own sweep, they read as one
+#continuous swing rather than four poses on repeat.
+SPIN_ROW = 4
+SPIN_UP = [2, 3]
+SPIN = [5, 6, 9, 10]
+
+#Those four are MOVED, not copied: the slam pack below leaves them out. Sharing them
+#made the two moves look like each other, and a boss's two tells are the one thing that
+#must never read the same. What is left in the slam is its own shape - windup, the
+#ground burst, the dome, recovery - and columns 4 and 8 are held longer so the two
+#bursts still carry the move now that the rings are not there to dissipate them.
+#(source column, frame duration)
+SLAM = [(0, 1.0), (1, 1.0), (2, 1.0), (3, 1.0), (4, 1.8),
+        (7, 1.0), (8, 1.8), (11, 1.0), (12, 1.0), (13, 1.0)]
+#Dropping 5 and 6 pulls the dome forward: source column 8 lands at index 6 in the pack,
+#which is what BossMain.SLAM_DOME_FRAME has to point at.
+
 PHASE1 = [
     ('idle',   grid(0, 7),  8.0,  True),
     ('walk',   grid(1, 4),  8.0,  True),
-    ('slam',   grid(4, 14), 10.0, False),
+    ('slam',   [(c * 128, 4 * 64, 64, 64, d) for c, d in SLAM], 10.0, False),
     ('cleave', [(c * 128 + t, CLEAVE_ROW * 64, 128, 64, d) for c, t, d in CLEAVE],
                10.0, False),
+    #Looping on purpose: the sweep's length is an export on BossMain, not a frame count,
+    #so the animation has to be able to outlast whatever that is set to
+    ('spin_up', cells(SPIN_ROW, SPIN_UP), 6.0, False),
+    ('spin',    cells(SPIN_ROW, SPIN),    8.0, True),
     ('hurt',   grid(6, 2),  10.0, False),
     ('death',  grid(7, 9),  10.0, False),
 ]

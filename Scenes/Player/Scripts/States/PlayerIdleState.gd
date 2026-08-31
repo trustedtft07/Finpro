@@ -2,20 +2,31 @@ extends State
 class_name PlayerIdle
 
 @export var animator : AnimationPlayer
+@onready var player : PlayerMain = $"../.."
 
 func Enter():
+	#Moving coasts to a halt before handing over, so there is nothing left to shed here
+	player.velocity = Vector2.ZERO
 	animator.play("Idle")
-	pass
-	
+
 func Update(_delta : float):
-	if(Input.get_vector("MoveLeft", "MoveRight", "MoveUp", "MoveDown").normalized()):
-		state_transition.emit(self, "Moving")
-		
-	if Input.is_action_just_pressed("Punch")  or Input.is_action_just_pressed("Kick"):
+	#Peek, don't claim: the state being handed to spends the press, so it survives the
+	#change_state() in between
+	if player.peek_input(["Dash"]):
+		state_transition.emit(self, "Rolling")
+		return
+
+	if player.peek_input(["Punch", "Kick"]):
 		state_transition.emit(self, "Attacking")
+		return
 
-	if Input.is_action_just_pressed("Heal"):
+	if player.peek_input(["Heal"]):
 		state_transition.emit(self, "Healing")
+		return
 
-	if Input.is_action_just_pressed("Parry"):
+	if player.peek_input(["Parry"]):
 		state_transition.emit(self, "Parrying")
+		return
+
+	if(Input.get_vector("MoveLeft", "MoveRight", "MoveUp", "MoveDown") != Vector2.ZERO):
+		state_transition.emit(self, "Moving")

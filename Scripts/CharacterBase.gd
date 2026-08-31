@@ -19,6 +19,9 @@ var max_health : int
 var knockback_velocity : Vector2 = Vector2.ZERO
 var is_knockbacked : bool = false
 var _knockback_timer : float = 0.0
+#Fast enough that the shove has nearly bled off by the time the duration below cuts it -
+#a knockback that is still travelling when its timer expires stops dead mid-slide
+@export var knockback_decay : float = 2600.0
 
 func _ready():
 	init_character()
@@ -66,7 +69,7 @@ func _process_knockback(delta : float):
 		return
 	velocity = knockback_velocity
 	move_and_slide()
-	knockback_velocity = knockback_velocity.move_toward(Vector2.ZERO, 1200.0 * delta)
+	knockback_velocity = knockback_velocity.move_toward(Vector2.ZERO, knockback_decay * delta)
 	_knockback_timer -= delta
 	if _knockback_timer <= 0.0 or knockback_velocity.length() <= 1.0:
 		is_knockbacked = false

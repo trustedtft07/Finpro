@@ -11,7 +11,7 @@ class_name PlayerParrying
 
 @export var success_hitstop : float = 0.12
 @export var success_timescale : float = 0.02
-@export var deflect_knockback : float = 900.0
+@export var deflect_knockback : float = 1200.0
 
 @export var camera : Camera2D
 @export var parry_text : Label
@@ -23,10 +23,12 @@ var phase : Phase
 var _timer : float
 var _active : bool = false
 var _attacker : EnemyMain
-var player : PlayerMain
+@onready var player : PlayerMain = $"../.."
 
 func Enter():
-	player = get_tree().get_first_node_in_group("Player") as PlayerMain
+	#Claimed here rather than by whichever state sent us, so a parry that can't start
+	#doesn't leave the press in the buffer to fire again next frame
+	player.claim_input(["Parry"])
 	_active = false
 
 	#call_deferred: see PlayerAttackState's stamina bail-out for why
@@ -54,6 +56,12 @@ func _abort_to_idle():
 
 func Update(delta : float):
 	if(!_active):
+		return
+
+	#Rolling out of a whiffed parry is the escape the endlag exists to make you earn -
+	#it costs the roll's own stamina on top of the parry's
+	if(phase == Phase.RECOVER and player.peek_input(["Dash"])):
+		state_transition.emit(self, "Rolling")
 		return
 
 	_timer -= delta
@@ -121,6 +129,12 @@ func _play_success():
 	tween.tween_property(player.sprite, "modulate", Color(1.4, 1.4, 1.0), 0.06)
 	tween.tween_property(player.sprite, "modulate", Color.WHITE, 0.16)
 	await tween.finished
+
+	#A landed parry is meant to open a punish, so a swing queued during the freeze-frame
+	#comes straight out instead of being thrown away
+	if player.peek_input(["Punch", "Kick"]):
+		state_transition.emit(self, "Attacking")
+		return
 
 	state_transition.emit(self, "Idle")
 

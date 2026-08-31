@@ -2,9 +2,10 @@ extends EnemyMain
 class_name BossMain
 
 #Two-phase boss.
-#  Phase 1 - the Sword: walks the player down and answers with one of two swings -
-#            a ground slam that hits every direction at once, and a forward cleave
-#            that lances a long way down a single line.
+#  Phase 1 - the Sword: walks the player down and answers with one of three swings,
+#            one per range band - a ground slam at its feet, a whirling spin that
+#            sweeps the ring around it twice, and a forward cleave that lances a long
+#            way down a single line.
 #  Phase 2 - the Crystal Knight: roots itself in place and fights at range with a
 #            charged beam, fans of small shards, and a lightning storm that paints a
 #            circle on the ground before every bolt lands.
@@ -20,7 +21,7 @@ signal boss_defeated
 
 enum Act {
 	SLEEP,                                   # waiting for the player to walk in
-	CHASE, SLAM, CLEAVE, RECOVER,            # phase 1
+	CHASE, SLAM, SPIN, CLEAVE, RECOVER,      # phase 1
 	TRANSITION,
 	IDLE2, CAST, SPREAD, STORM,              # phase 2
 	DYING,
@@ -30,10 +31,15 @@ const PHASE1 := 1
 const PHASE2 := 2
 
 #--- frames that actually connect, read off Sword.png -------------------------
-#row 4 "slam": frame 4 draws the ground shockwave, frame 8 the rising dome. Both are
-#drawn centred on the character, so both hit as circles.
+#row 4 "slam": source column 4 draws the ground shockwave, column 8 the rising dome.
+#Both are drawn centred on the character, so both hit as circles.
+#
+#These are indices into the PACK, not columns on the sheet, and the two stopped matching
+#when the ring frames moved out to "spin": dropping columns 5 and 6 pulls the dome
+#forward from index 8 to index 6. Re-cutting the slam in make_boss_frames.py means
+#re-checking this pair.
 const SLAM_HIT_FRAME := 4
-const SLAM_DOME_FRAME := 8
+const SLAM_DOME_FRAME := 6
 #"cleave" is row 5 re-packed in place (see Tools/MapGen/make_boss_frames.py): frame 1
 #draws the lance streak, frame 3 the sweep crescent that follows it. Its cells are the
 #full 128x64, so the sprite carries a different offset while this one plays.
@@ -58,9 +64,10 @@ const CELL_CENTRE := Vector2(32.0, 32.0)
 @export var leash_range : float = 1500.0
 
 @export_group("Phase 1")
-#A shade quicker than the player's 140. With the dash gone this walk is the only
-#way phase 1 closes a gap, so it has to win ground on someone backing off.
-@export var chase_speed : float = 165.0
+#A shade quicker than the player's 240. With no dash of its own this walk is the only
+#way phase 1 closes a gap, so it has to win ground on someone backing off - the dodge
+#roll is what the player buys distance with, not walking away.
+@export var chase_speed : float = 265.0
 #--- the slam: every direction at once ---------------------------------------
 #The shockwave sprite is 52 art px across; at 3x that is a 78px radius on the ground
 @export var slam_range : float = 92.0
@@ -70,6 +77,25 @@ const CELL_CENTRE := Vector2(32.0, 32.0)
 @export var dome_radius : float = 62.0
 @export var dome_damage : int = 26
 @export var slam_recover : float = 0.6
+
+#--- the spin: the ring around it, twice -------------------------------------
+#Reaches further than the slam and covers every angle, so the band between the two is no
+#longer a safe place to stand and wait. The answer is to be outside spin_radius when it
+#starts, or to roll through the crescent - not to sidestep, which is the cleave's
+#answer, and not to back off one step, which is the slam's.
+@export var spin_radius : float = 165.0
+#Half-width of the damaging wedge, in degrees
+@export var spin_arc : float = 34.0
+@export var spin_damage : int = 26
+#Long enough to react to on sight. The aura draws a closing ring for all of it.
+@export var spin_windup : float = 0.5
+@export var spin_sweep_time : float = 1.0
+@export var spin_revolutions : float = 2.0
+#The payoff for baiting it out: the longest opening phase 1 gives up
+@export var spin_recover : float = 0.75
+@export var spin_cooldown : float = 4.5
+#Only worth starting when the sweep can actually reach
+@export var spin_trigger_range : float = 165.0
 
 #--- the cleave: one direction, a long way ------------------------------------
 #The lance streak runs 90 art px past the character and is drawn about 15 art px
@@ -128,6 +154,7 @@ const CELL_CENTRE := Vector2(32.0, 32.0)
 @export var shard_scene : PackedScene
 @export var lightning_scene : PackedScene
 @export var hud : BossHUD
+@export var spin_aura : BossSpinAura
 @export var arena_radius : float = 520.0
 
 var phase : int = PHASE1
@@ -142,6 +169,8 @@ var _fired2 : bool = false
 var _volleys_left : int = 0
 var _cleave_dir : Vector2 = Vector2.RIGHT
 var _cleave_ready_at : float = 0.0
+var _spin_from : float = 0.0
+var _spin_ready_at : float = 0.0
 
 func _ready():
 	super()
@@ -158,8 +187,8 @@ func _physics_process(delta):
 		return
 	#Facing is locked through a cleave: the lance is drawn along the sprite's x and
 	#the hitbox reads its direction off that, so a mid-swing flip would mirror the hit
-	#away from the streak
-	if act != Act.CLEAVE:
+	#away from the streak. A spin drives its own facing off the sweep instead.
+	if act != Act.CLEAVE and act != Act.SPIN:
 		_face_player()
 
 	if act == Act.SLEEP:
@@ -175,6 +204,7 @@ func _physics_process(delta):
 	match act:
 		Act.CHASE: _do_chase()
 		Act.SLAM: _do_slam()
+		Act.SPIN: _do_spin()
 		Act.CLEAVE: _do_cleave()
 		Act.RECOVER: _do_recover()
 		Act.TRANSITION: _do_transition()
@@ -210,6 +240,10 @@ func _face_player():
 	sprite.scale.x = size * (dir if _to_player().x >= 0.0 else -dir)
 
 func _enter(new_act : int, duration : float):
+	#Every way out of a spin comes through here - recovery, a parry, the phase flip,
+	#death - so this is the one place the whirl has to be taken off screen
+	if new_act != Act.SPIN and spin_aura:
+		spin_aura.finish()
 	act = new_act
 	_timer = duration
 	_fired = false
@@ -313,9 +347,15 @@ func _do_chase():
 		velocity = Vector2.ZERO
 		_start_slam()
 		return
+	#Cleave is checked first because it is the pickier of the two mid-range moves -
+	#letting the spin claim the whole band would mean the lance almost never comes out
 	if _can_cleave(offset, distance):
 		velocity = Vector2.ZERO
 		_start_cleave()
+		return
+	if _can_spin(distance):
+		velocity = Vector2.ZERO
+		_start_spin()
 		return
 
 	if sprite.animation != "walk":
@@ -338,6 +378,64 @@ func _do_slam():
 		_hit_player(dome_radius, dome_damage)
 	if not sprite.is_playing():
 		_enter(Act.RECOVER, slam_recover)
+
+#The gap the other two moves leave: past the slam's reach, but not lined up for a lance
+func _can_spin(distance : float) -> bool:
+	if _now() < _spin_ready_at:
+		return false
+	return distance <= spin_trigger_range
+
+func _start_spin():
+	#The sweep starts on the far side and comes round to the player, rather than opening
+	#on top of them. That buys half a revolution of travel the player can watch and react
+	#to on top of the windup, which is the difference between a move you dodge on sight
+	#and one you can only dodge by having memorised it.
+	_spin_from = _to_player().angle() + PI
+	_play_narrow("spin_up")
+	if spin_aura:
+		spin_aura.begin(spin_radius, spin_arc, _spin_from)
+	_enter(Act.SPIN, spin_windup + spin_sweep_time)
+	_spin_ready_at = _now() + spin_cooldown
+
+#The one phase 1 move driven by a timer rather than by sprite.frame. The other two fire
+#single hits on the frame that draws them, which is why they read their own animation;
+#this one needs a sweep angle that is continuous, and its four ring frames loop
+#underneath for however long spin_sweep_time is set to.
+func _do_spin():
+	var elapsed = (spin_windup + spin_sweep_time) - _timer
+
+	if elapsed < spin_windup:
+		if spin_aura:
+			spin_aura.telegraph(elapsed / maxf(spin_windup, 0.001))
+		return
+
+	#One-shot, on the frame the windup ends: the loop below runs every frame after it
+	if sprite.animation != "spin":
+		_play_narrow("spin")
+		GameManager.hitstop(0.04, 0.35)
+		AudioManager.play_sound(AudioManager.PLAYER_ATTACK_SWING, 0.0, -2)
+
+	var progress = clampf((elapsed - spin_windup) / maxf(spin_sweep_time, 0.001), 0.0, 1.0)
+	var angle = _spin_from + TAU * spin_revolutions * progress
+	var aim = Vector2.RIGHT.rotated(angle)
+
+	if spin_aura:
+		spin_aura.sweep(angle)
+	_face_sweep(aim)
+	#Standing in it is meant to hurt. The player's own i-frames are what keep this from
+	#landing every physics frame, so one revolution is at most one hit.
+	_hit_player_wedge(aim, spin_radius, spin_arc, spin_damage)
+
+	if _timer <= 0.0:
+		_play_narrow("idle")
+		_enter(Act.RECOVER, spin_recover)
+
+#Turning the boss to follow its own sweep is what sells four looping ring frames as one
+#continuous swing rather than four poses on repeat
+func _face_sweep(aim : Vector2):
+	var dir = -1.0 if flipped_horizontal else 1.0
+	var size = absf(sprite.scale.x)
+	sprite.scale.x = size * (dir if aim.x >= 0.0 else -dir)
 
 #Only worth swinging when the player is both far enough out for the lance to have
 #somewhere to go and close enough to the boss's own line for the streak to point at
@@ -386,6 +484,8 @@ func _do_recover():
 
 func _reset_fight():
 	velocity = Vector2.ZERO
+	if spin_aura:
+		spin_aura.finish()
 	global_position = _origin
 	health = max_health
 	healthbar.value = health
@@ -561,10 +661,11 @@ func apply_knockback(direction : Vector2, force : float, duration : float = 0.15
 	super.apply_knockback(direction, force * 0.12, duration * 0.6)
 
 #A parry staggers the boss out of whichever phase 1 swing it was in. Moving to RECOVER
-#also drops the rest of that attack's frame-driven hits, since those only fire from
-#SLAM and CLEAVE - so the parry cancels the follow-up, not just the frame it caught.
+#also drops the rest of that attack's hits - the slam's dome, the cleave's sweep, and
+#every remaining degree of the spin - so the parry cancels the follow-up, not just the
+#frame it caught.
 func interrupt_attack():
-	if act != Act.SLAM and act != Act.CLEAVE:
+	if act != Act.SLAM and act != Act.CLEAVE and act != Act.SPIN:
 		return
 	_play_narrow("hurt")
 	#The cleave stays down past the stagger too, or the boss would answer the punish

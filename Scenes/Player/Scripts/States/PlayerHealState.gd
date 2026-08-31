@@ -8,12 +8,14 @@ class_name PlayerHealing
 #One-shot pop when the heal lands
 @export var heal_burst : GPUParticles2D
 
-var player : PlayerMain
+@onready var player : PlayerMain = $"../.."
 var interrupted := false
 var _glow_tween : Tween
 
 func Enter():
-	player = get_tree().get_first_node_in_group("Player") as PlayerMain
+	#Claimed here rather than by whichever state sent us, so a heal that can't start
+	#doesn't leave the press in the buffer to fire again next frame
+	player.claim_input(["Heal"])
 
 	#call_deferred: see PlayerAttackState's stamina bail-out for why
 	if(!player.has_heal_charge()):

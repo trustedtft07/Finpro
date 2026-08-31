@@ -2,7 +2,7 @@ extends State
 class_name enemy_chase_state
 
 @export var attack_range := float(50)
-@export var move_speed := float(38)
+@export var move_speed := float(65)
 
 @export var animator : AnimationPlayer
 @onready var body = $"../.."
@@ -27,6 +27,6 @@ func Update(_delta):
 	body.velocity = chase_direction.normalized() * move_speed
 	body.move_and_slide()
 	
-	if(chase_direction.length() <= attack_range and not body.is_staggered()):
+	if(chase_direction.length() <= attack_range and body.can_attack()):
 		state_transition.emit(self, "enemy_attack_state")
 		

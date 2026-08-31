@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://Scenes/Boss/BossShard.tscn" id="6_shard"]
 [ext_resource type="PackedScene" path="res://Scenes/Boss/BossLightning.tscn" id="7_bolt"]
 [ext_resource type="Script" path="res://Scripts/FSM/FiniteStateMachine.gd" id="8_fsm"]
+[ext_resource type="Script" path="res://Scripts/Boss/BossSpinAura.gd" id="9_spin"]
 
 [sub_resource type="CircleShape2D" id="Body"]
 radius = 26.0
@@ -15,7 +16,7 @@ radius = 26.0
 ; Sword.png is drawn facing right - the lunge travels right and the cleave crescents
 ; sweep right - so the sprite is only mirrored when the player is to the left, which
 ; is what flipped_horizontal=false gives. Phase 2 is symmetrical and never mirrors.
-[node name="Boss" type="CharacterBody2D" groups=["Enemy"] node_paths=PackedStringArray("sprite", "healthbar", "collider", "hud")]
+[node name="Boss" type="CharacterBody2D" groups=["Enemy"] node_paths=PackedStringArray("sprite", "healthbar", "collider", "hud", "spin_aura")]
 texture_filter = 1
 collision_layer = 4
 collision_mask = 1
@@ -32,12 +33,18 @@ shard_scene = ExtResource("6_shard")
 lightning_scene = ExtResource("7_bolt")
 collider = NodePath("Collider")
 hud = NodePath("BossHUD")
+spin_aura = NodePath("SpinAura")
 
 [node name="Sprite" type="AnimatedSprite2D" parent="."]
 scale = Vector2(3, 3)
 sprite_frames = ExtResource("2_p1")
 animation = &"idle"
 offset = Vector2(1, -19)
+
+; Drawn in world pixels at the boss's feet, so it sits outside the 3x Sprite and
+; takes its radius straight from BossMain.spin_radius.
+[node name="SpinAura" type="Node2D" parent="."]
+script = ExtResource("9_spin")
 
 [node name="Collider" type="CollisionShape2D" parent="."]
 position = Vector2(0, -6)

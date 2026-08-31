@@ -29,8 +29,10 @@
 [ext_resource type="Script" uid="uid://da10r3p2y3wgl" path="res://Scenes/Player/Scripts/States/PlayerAttackState.gd" id="27_j1lrx"]
 [ext_resource type="Texture2D" uid="uid://dyb5iqfj3tmwj" path="res://Art/Sprites/light.png" id="27_on0bn"]
 [ext_resource type="LabelSettings" uid="uid://da8inon5cmt2r" path="res://Art/Fonts/pixelized_label.tres" id="28_5mc6f"]
+[ext_resource type="LabelSettings" uid="uid://byh8dqxk1hud0" path="res://Art/Fonts/pixelized_label_hud.tres" id="41_hudlbl"]
 [ext_resource type="Script" uid="uid://d3fyawjpargbf" path="res://Scripts/AttackData.gd" id="28_wb7jg"]
 [ext_resource type="Script" uid="uid://bp27s5oulenou" path="res://Scenes/Player/Scripts/States/PlayerWalkState.gd" id="29_bdbrv"]
+[ext_resource type="Script" uid="uid://dy2qp67tfw7qi" path="res://Scenes/Player/Scripts/States/PlayerRollState.gd" id="42_roll1"]
 [ext_resource type="Script" uid="uid://caidk5yrvicma" path="res://Scenes/Player/Scripts/States/PlayerDeathState.gd" id="30_ecf44"]
 [ext_resource type="Script" uid="uid://bdlqkquny5ax3" path="res://Scripts/QuestGeneral/QuestTracker.gd" id="33_2eisr"]
 [ext_resource type="LabelSettings" uid="uid://1cnb4418rr7" path="res://Art/Fonts/pixelized_label_large.tres" id="34_aqkdi"]
@@ -174,7 +176,12 @@ radius = 42.0
 radius = 8.06226
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ub6e5"]
-bg_color = Color(0.0352941, 0.0156863, 0.00784314, 0.427451)
+bg_color = Color(0.0352941, 0.0156863, 0.00784314, 0.74902)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.0784314, 0.0627451, 0.054902, 0.878431)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0guox"]
 bg_color = Color(1, 0, 0, 1)
@@ -386,10 +393,10 @@ tracks/2/path = NodePath("AnimatedSprite2D/Hitboxes/Kick_Hitbox/CollisionShape2D
 tracks/2/interp = 1
 tracks/2/loop_wrap = true
 tracks/2/keys = {
-"times": PackedFloat32Array(0, 0.219),
-"transitions": PackedFloat32Array(1, 1),
+"times": PackedFloat32Array(0, 0.063, 0.219),
+"transitions": PackedFloat32Array(1, 1, 1),
 "update": 1,
-"values": [false, true]
+"values": [true, false, true]
 }
 
 [sub_resource type="Animation" id="Animation_wo7cn"]
@@ -439,12 +446,12 @@ collision_mask = 5
 floor_stop_on_slope = false
 floor_block_on_wall = false
 script = ExtResource("1_y5oq4")
-staminabar = NodePath("Camera2D/StaminaBar")
+staminabar = NodePath("HUD/Root/StaminaBar")
 aim_indicator = NodePath("AimIndicator")
-heal_bar = NodePath("Camera2D/HealBar")
-manabar = NodePath("Camera2D/ManaBar")
+heal_bar = NodePath("HUD/Root/HealBar")
+manabar = NodePath("HUD/Root/ManaBar")
 sprite = NodePath("AnimatedSprite2D")
-healthbar = NodePath("Camera2D/ProgressBar")
+healthbar = NodePath("HUD/Root/ProgressBar")
 health = 200
 hit_particles = NodePath("hit_particle_blood")
 
@@ -526,26 +533,40 @@ initial_state = NodePath("Idle")
 script = ExtResource("26_28u22")
 animator = NodePath("../../AnimationPlayer")
 
-[node name="Attacking" type="Node" parent="FSM" unique_id=33246904 node_paths=PackedStringArray("combo_text", "animator", "attacks")]
+[node name="Attacking" type="Node" parent="FSM" unique_id=33246904 node_paths=PackedStringArray("combo_text", "animator", "attacks", "hitboxes")]
 script = ExtResource("27_j1lrx")
-combo_text = NodePath("../../Camera2D/ComboText")
+combo_text = NodePath("../../HUD/Root/ComboText")
 animator = NodePath("../../AnimationPlayer")
 attacks = [NodePath("PunchAttack"), NodePath("KickAttack")]
+hitboxes = [NodePath("../../AnimatedSprite2D/Hitboxes/Punch_Hitbox/hitboxShape"), NodePath("../../AnimatedSprite2D/Hitboxes/Kick_Hitbox/CollisionShape2D")]
 
 [node name="PunchAttack" type="Node" parent="FSM/Attacking" unique_id=120447117]
 script = ExtResource("28_wb7jg")
 anim = "Attack"
 damage = 40
-stamina_cost = 30.0
+stamina_cost = 24.0
+knockback_force = 520.0
+cancel_time = 0.3
+lunge_speed = 260.0
 
 [node name="KickAttack" type="Node" parent="FSM/Attacking" unique_id=1693073941]
 script = ExtResource("28_wb7jg")
 anim = "MoonKick"
 damage = 25
+stamina_cost = 16.0
+knockback_force = 380.0
+cancel_time = 0.2
+lunge_speed = 200.0
 
 [node name="Moving" type="Node" parent="FSM" unique_id=2014675910 node_paths=PackedStringArray("animator")]
 script = ExtResource("29_bdbrv")
-movespeed = 140
+movespeed = 240.0
+acceleration = 3400.0
+friction = 4200.0
+animator = NodePath("../../AnimationPlayer")
+
+[node name="Rolling" type="Node" parent="FSM" unique_id=2014675911 node_paths=PackedStringArray("animator")]
+script = ExtResource("42_roll1")
 animator = NodePath("../../AnimationPlayer")
 
 [node name="Die" type="Node" parent="FSM" unique_id=385899417 node_paths=PackedStringArray("animator")]
@@ -560,7 +581,7 @@ heal_burst = NodePath("../../AnimatedSprite2D/HealBurst")
 [node name="Parrying" type="Node" parent="FSM" unique_id=1115162492 node_paths=PackedStringArray("camera", "parry_text", "parry_sparks", "shield")]
 script = ExtResource("37_parry1")
 camera = NodePath("../../Camera2D")
-parry_text = NodePath("../../Camera2D/ParryText")
+parry_text = NodePath("../../HUD/Root/ParryText")
 parry_sparks = NodePath("../../AnimatedSprite2D/ParrySparks")
 shield = NodePath("../../ParryShield")
 
@@ -570,110 +591,132 @@ shadow_enabled = true
 texture = ExtResource("27_on0bn")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1807212015]
-scale = Vector2(2, 2)
-position_smoothing_speed = 15.0
+process_callback = 0
+position_smoothing_enabled = true
+position_smoothing_speed = 10.0
 
-[node name="ProgressBar" type="ProgressBar" parent="Camera2D" unique_id=1293295582]
-light_mask = 2
-visibility_layer = 2
-offset_left = -228.5
-offset_top = -100.0
-offset_right = -222.5
-offset_bottom = -36.0
-rotation = -1.57079
+[node name="HUD" type="CanvasLayer" parent="." unique_id=1807212016]
+
+[node name="Root" type="Control" parent="HUD" unique_id=1807212017]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="HUD/Root" unique_id=1789062304]
+layout_mode = 1
+offset_left = 14.0
+offset_top = 8.0
+offset_right = 118.0
+offset_bottom = 40.0
+mouse_filter = 2
+text = "Health"
+label_settings = ExtResource("41_hudlbl")
+vertical_alignment = 1
+
+[node name="ProgressBar" type="ProgressBar" parent="HUD/Root" unique_id=1293295582]
+layout_mode = 1
+offset_left = 120.0
+offset_top = 16.0
+offset_right = 280.0
+offset_bottom = 32.0
+mouse_filter = 2
 theme_override_styles/background = SubResource("StyleBoxFlat_ub6e5")
 theme_override_styles/fill = SubResource("StyleBoxFlat_0guox")
 step = 1.0
-value = 25.0
-fill_mode = 2
+value = 100.0
 show_percentage = false
 
-[node name="Label" type="Label" parent="Camera2D" unique_id=1789062304]
-offset_left = -228.5
-offset_top = -119.0
-offset_right = -182.5
-offset_bottom = -106.0
-text = "Health"
-label_settings = ExtResource("28_5mc6f")
-
-[node name="StaminaLabel" type="Label" parent="Camera2D" unique_id=537789353]
-offset_left = -228.5
-offset_top = -94.0
-offset_right = -182.5
-offset_bottom = -81.0
+[node name="StaminaLabel" type="Label" parent="HUD/Root" unique_id=537789353]
+layout_mode = 1
+offset_left = 14.0
+offset_top = 40.0
+offset_right = 118.0
+offset_bottom = 72.0
+mouse_filter = 2
 text = "Stamina"
-label_settings = ExtResource("28_5mc6f")
+label_settings = ExtResource("41_hudlbl")
+vertical_alignment = 1
 
-[node name="StaminaBar" type="ProgressBar" parent="Camera2D" unique_id=1059682366]
-light_mask = 2
-visibility_layer = 2
-offset_left = -228.5
-offset_top = -75.0
-offset_right = -222.5
-offset_bottom = -11.0
-rotation = -1.57079
+[node name="StaminaBar" type="ProgressBar" parent="HUD/Root" unique_id=1059682366]
+layout_mode = 1
+offset_left = 120.0
+offset_top = 48.0
+offset_right = 280.0
+offset_bottom = 62.0
+mouse_filter = 2
 theme_override_styles/background = SubResource("StyleBoxFlat_ub6e5")
 theme_override_styles/fill = SubResource("StyleBoxFlat_stam1")
 step = 1.0
 value = 100.0
-fill_mode = 2
 show_percentage = false
 
-[node name="HealLabel" type="Label" parent="Camera2D" unique_id=1765114184]
-offset_left = -228.5
-offset_top = -69.0
-offset_right = -182.5
-offset_bottom = -56.0
-text = "Heal"
-label_settings = ExtResource("28_5mc6f")
+[node name="ManaLabel" type="Label" parent="HUD/Root" unique_id=2100485799]
+layout_mode = 1
+offset_left = 14.0
+offset_top = 72.0
+offset_right = 118.0
+offset_bottom = 104.0
+mouse_filter = 2
+text = "Mana"
+label_settings = ExtResource("41_hudlbl")
+vertical_alignment = 1
 
-[node name="HealBar" type="ProgressBar" parent="Camera2D" unique_id=762638219]
-light_mask = 2
-visibility_layer = 2
-offset_left = -228.5
-offset_top = -50.5
-offset_right = -222.5
-offset_bottom = 13.5
-rotation = -1.57079
+[node name="ManaBar" type="ProgressBar" parent="HUD/Root" unique_id=904957683]
+layout_mode = 1
+offset_left = 120.0
+offset_top = 80.0
+offset_right = 280.0
+offset_bottom = 94.0
+mouse_filter = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_ub6e5")
+theme_override_styles/fill = SubResource("StyleBoxFlat_mana1")
+step = 1.0
+value = 100.0
+show_percentage = false
+
+[node name="HealLabel" type="Label" parent="HUD/Root" unique_id=1765114184]
+layout_mode = 1
+offset_left = 14.0
+offset_top = 104.0
+offset_right = 118.0
+offset_bottom = 136.0
+mouse_filter = 2
+text = "Gourd"
+label_settings = ExtResource("41_hudlbl")
+vertical_alignment = 1
+
+[node name="HealBar" type="ProgressBar" parent="HUD/Root" unique_id=762638219]
+layout_mode = 1
+offset_left = 120.0
+offset_top = 112.0
+offset_right = 280.0
+offset_bottom = 126.0
+mouse_filter = 2
 theme_override_styles/background = SubResource("StyleBoxFlat_ub6e5")
 theme_override_styles/fill = SubResource("StyleBoxFlat_heal1")
 max_value = 3.0
 step = 1.0
 value = 3.0
-fill_mode = 2
 show_percentage = false
 
-[node name="ManaLabel" type="Label" parent="Camera2D" unique_id=2100485799]
-offset_left = -228.5
-offset_top = -44.0
-offset_right = -182.5
-offset_bottom = -31.0
-text = "Mana"
-label_settings = ExtResource("28_5mc6f")
-
-[node name="ManaBar" type="ProgressBar" parent="Camera2D" unique_id=904957683]
-light_mask = 2
-visibility_layer = 2
-offset_left = -228.5
-offset_top = -26.0
-offset_right = -222.5
-offset_bottom = 38.0
-rotation = -1.57079
-theme_override_styles/background = SubResource("StyleBoxFlat_ub6e5")
-theme_override_styles/fill = SubResource("StyleBoxFlat_mana1")
-step = 1.0
-value = 100.0
-fill_mode = 2
-show_percentage = false
-
-[node name="ControlsHint" type="Label" parent="Camera2D" unique_id=1114666200]
-offset_left = 38.5
-offset_top = -133.0
-offset_right = 228.5
-offset_bottom = -7.0
+[node name="ControlsHint" type="Label" parent="HUD/Root" unique_id=1114666200]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -204.0
+offset_top = 8.0
+offset_right = -12.0
+offset_bottom = 188.0
+grow_horizontal = 0
+mouse_filter = 2
 text = "Controls
 WASD - Move
-Space - Dash
+Space - Dodge roll
 LMB / RMB - Attack
 Q - Ranged
 F - Parry
@@ -683,38 +726,74 @@ I - Mechanics
 Esc - Pause"
 label_settings = ExtResource("28_5mc6f")
 horizontal_alignment = 2
-paragraph_separator = "/"
 
-[node name="ParryText" type="Label" parent="Camera2D" unique_id=1114666201]
+[node name="ParryText" type="Label" parent="HUD/Root" unique_id=1114666201]
 modulate = Color(1, 1, 1, 0)
+layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -64.0
-offset_top = -91.0
-offset_right = 64.0
-offset_bottom = -65.0
+offset_left = -140.0
+offset_top = 148.0
+offset_right = 140.0
+offset_bottom = 188.0
 grow_horizontal = 2
-pivot_offset = Vector2(64, 13)
+mouse_filter = 2
+pivot_offset = Vector2(140, 20)
 text = "PARRY!"
 label_settings = ExtResource("34_aqkdi")
 horizontal_alignment = 1
+vertical_alignment = 1
 uppercase = true
 
-[node name="ComboText" type="Label" parent="Camera2D" unique_id=1114666202]
+[node name="ComboText" type="Label" parent="HUD/Root" unique_id=1114666202]
 modulate = Color(1, 1, 1, 0)
+layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -64.0
-offset_top = -60.0
-offset_right = 64.0
-offset_bottom = -40.0
+offset_left = -140.0
+offset_top = 190.0
+offset_right = 140.0
+offset_bottom = 222.0
 grow_horizontal = 2
-pivot_offset = Vector2(64, 10)
+mouse_filter = 2
+pivot_offset = Vector2(140, 16)
 text = "COMBO 1"
-label_settings = ExtResource("28_5mc6f")
+label_settings = ExtResource("41_hudlbl")
 horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="QuestAnnounceText" type="Label" parent="HUD/Root" unique_id=1642405827]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 62.0
+offset_right = 200.0
+offset_bottom = 126.0
+grow_horizontal = 2
+mouse_filter = 2
+text = "announcement"
+label_settings = ExtResource("34_aqkdi")
+horizontal_alignment = 1
+vertical_alignment = 1
+uppercase = true
+
+[node name="QuestText" type="Label" parent="HUD/Root" unique_id=732124545]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 14.0
+offset_top = -76.0
+offset_right = 366.0
+offset_bottom = -12.0
+grow_vertical = 0
+mouse_filter = 2
+label_settings = ExtResource("41_hudlbl")
+vertical_alignment = 2
 
 [node name="hit_particle_blood" type="GPUParticles2D" parent="." unique_id=1374123866]
 emitting = false
@@ -731,31 +810,10 @@ libraries/ = SubResource("AnimationLibrary_gtuut")
 
 [node name="PauseMenu" parent="." unique_id=979520327 instance=ExtResource("39_pause1")]
 
-[node name="QuestTracker" type="Node2D" parent="." unique_id=53938960 node_paths=PackedStringArray("quest_info", "quest_announcement")]
+[node name="QuestTracker" type="Node" parent="." unique_id=53938960 node_paths=PackedStringArray("quest_info", "quest_announcement")]
 script = ExtResource("33_2eisr")
-quest_info = NodePath("QuestText")
-quest_announcement = NodePath("QuestAnnounceText")
-
-[node name="QuestText" type="Label" parent="QuestTracker" unique_id=732124545]
-offset_left = -456.0
-offset_top = 170.0
-offset_right = -304.0
-offset_bottom = 199.0
-label_settings = ExtResource("28_5mc6f")
-
-[node name="QuestAnnounceText" type="Label" parent="QuestTracker" unique_id=1642405827]
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -64.0
-offset_top = -98.0
-offset_right = 64.0
-offset_bottom = -72.0
-grow_horizontal = 2
-text = "announcement"
-label_settings = ExtResource("34_aqkdi")
-horizontal_alignment = 1
-uppercase = true
+quest_info = NodePath("../HUD/Root/QuestText")
+quest_announcement = NodePath("../HUD/Root/QuestAnnounceText")
 
 [connection signal="body_entered" from="AnimatedSprite2D/Hitboxes/Punch_Hitbox" to="FSM/Attacking" method="_on_hitbox_body_entered"]
 [connection signal="body_entered" from="AnimatedSprite2D/Hitboxes/Kick_Hitbox" to="FSM/Attacking" method="_on_hitbox_body_entered"]

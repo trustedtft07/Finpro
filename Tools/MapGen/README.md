@@ -108,17 +108,58 @@ walk variants**, not attacks. Measured across those rows the body centroid moves
 most 1.3px and the weapon pixel count stays flat - the sword just bobs. Only two rows
 are real attacks:
 
-| Row | Move | Impact frames | Measured |
-| --- | --- | --- | --- |
-| 4 | ground slam | **4** (shockwave), **8** (dome) | shockwave spans 52 art px -> 78px radius at 3x; dome 41 px |
-| 5 | forward cleave | **1** (lance), **2** (sweep) | the lance streak runs 90 art px past the character and is ~15 art px thick; the sweep crescent reaches 29 |
+| Row | Move | Source columns | Impact frames | Measured |
+| --- | --- | --- | --- | --- |
+| 4 | ground slam | 0-4, 7, 8, 11-13 | **4** (shockwave), **6** (dome) | shockwave spans 52 art px -> 78px radius at 3x; dome 41 px |
+| 4 | spin (re-cut) | 2-3 windup, 5, 6, 9, 10 sweep | timer-driven, see below | the ring frames, the only omnidirectional art on the sheet |
+| 5 | forward cleave | 0, 1, 5, 6, 3 | **1** (lance), **2** (sweep) | the lance streak runs 90 art px past the character and is ~15 art px thick; the sweep crescent reaches 29 |
 
-`BossMain` fires every hit from `sprite.frame`, never from a timer, so the damage
-window cannot drift away from the drawing. The two rows are deliberately different
-shapes, and phase 1 picks between them by range: row 4 draws a filled ellipse and then
-a dome, both centred on the character, so it hits as a **circle in every direction**;
-row 5 draws a streak along one axis, so it hits as a **band down that one line**, with
-the crescent that follows as a short wedge around the boss.
+**Impact frames are indices into the pack, not columns on the sheet.** The two only
+happened to agree while `slam` was the whole row. They stopped agreeing the moment the
+ring frames moved out of it: dropping columns 5 and 6 pulls the dome forward from index
+8 to index **6**. Re-cutting a row in `make_boss_frames.py` means re-checking the
+matching constants at the top of `BossMain.gd`.
+
+`BossMain` fires every hit from `sprite.frame`, never from a timer - with one deliberate
+exception noted below - so the damage window cannot drift away from the drawing. The two
+rows are deliberately different shapes, and phase 1 picks a move by range: row 4 draws a
+filled ellipse and then a dome, both centred on the character, so it hits as a **circle
+in every direction**; row 5 draws a streak along one axis, so it hits as a **band down
+that one line**, with the crescent that follows as a short wedge around the boss.
+
+### The spin, and why it is cut out of row 4
+
+Phase 1 wants three answers, one per range band, and the sheet only holds two attacks.
+The spin is therefore a **re-cut of row 4**, not new art: columns 2-3 are the sword drawn
+back and carry the windup pose on their own, and columns 5, 6, 9 and 10 are the ring
+frames - the only cells anywhere on the sheet that draw force leaving the character in
+every direction at once. The sword sits at a different angle in each, so looping them
+while `BossMain._face_sweep()` turns the boss to follow its own sweep reads as one
+continuous swing rather than four poses on repeat.
+
+Those four ring frames are **moved out of `slam`, not copied**. Leaving them in both
+packs meant the boss drew the same expanding rings for two different moves, and a boss's
+tells are the one thing that must never read the same - a player cannot commit to a dodge
+they have to wait out to identify. What is left in `slam` is its own shape: windup, the
+ground burst, the dome, recovery. Columns 4 and 8 are held 1.8 frame-units each so the
+two bursts still carry the move now that the rings are not there to dissipate them; the
+slam comes out at 1.20s instead of 1.40s, which reads as tighter rather than clipped.
+
+It is the one phase 1 move driven by a timer instead of by `sprite.frame`, because its
+hitbox is a wedge rotating continuously rather than a single frame that connects; the
+`spin` animation loops underneath for however long `spin_sweep_time` is set to. Two
+consequences worth keeping in mind:
+
+- **The loop has to be taken off screen explicitly.** `slam` and `cleave` end themselves,
+  a looping `spin` does not. Every exit runs `_play_narrow("idle")` and every act change
+  goes through `_enter()`, which is the single place `BossSpinAura.finish()` is called -
+  recovery, a parry, the phase flip, death and a leash reset all land there.
+- **The drawing and the hitbox share their numbers.** `BossSpinAura` is handed the same
+  radius, arc and angle `_hit_player_wedge()` is testing that frame, the way `AttackAura`
+  works on the player's side, so retuning `spin_radius` in the inspector moves the
+  crescent with it and the move stays dodgeable on sight rather than by memory. The sweep
+  also opens on the *far* side of the player and travels round to them, which buys half a
+  revolution of visible warning on top of the windup.
 
 Row 5 is root-motioned - the character walks ~66 art px across its own 128px cell. It
 used to be packed verbatim, with the script cancelling the travel in `sprite.offset`
